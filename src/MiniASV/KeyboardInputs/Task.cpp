@@ -130,7 +130,7 @@ namespace MiniASV
           std::cin >> input;
 
           m_pwmR.duty_cycle = m_pwmL.duty_cycle = input;
-
+          // commit test comment
           dispatchData();
         }
       }
