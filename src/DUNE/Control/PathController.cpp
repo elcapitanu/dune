@@ -385,7 +385,7 @@ namespace DUNE
         // Initialize cross-track monitoring data.
         m_ctm.diverging = false;
       }
-
+      printf("Startup ZzZZZ\n");
       // Call path startup handler.
       onPathStartup(m_estate, m_ts);
     }
@@ -393,7 +393,7 @@ namespace DUNE
     bool
     PathController::setStartPoint(double now, const IMC::DesiredPath *dpath)
     {
-
+      printf("muftuch call thisss\n");
       inf("Dpath start (lat/long) = %0.5f %0.5f | end (lat/long) = %0.5f %0.5f", dpath->start_lat, dpath->start_lon, dpath->end_lon, dpath->end_lat);
 
       m_pcs.flags = 0;

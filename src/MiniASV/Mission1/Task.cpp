@@ -43,7 +43,7 @@ namespace MiniASV
 
     struct Task : public DUNE::Tasks::Task
     {
-      Coordinates m_coord;
+      // Coordinates m_coord;
 
       //! Constructor.
       //! @param[in] name task name.
@@ -104,7 +104,7 @@ namespace MiniASV
         while (!stopping())
         {
           waitForMessages(1.0);
-          Coordinates::getTrackPosition();
+          // Coordinates::getTrackPosition();
         }
       }
     };
