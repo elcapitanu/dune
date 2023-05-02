@@ -30,6 +30,7 @@
 // DUNE headers.
 #include <DUNE/DUNE.hpp>
 #include <DUNE/Coordinates/General.hpp>
+#include <Maneuver/Multiplexer/Goto.hpp>
 
 namespace MiniASV
 {
@@ -43,8 +44,8 @@ namespace MiniASV
 
     struct Task : public DUNE::Tasks::Task
     {
-      // Coordinates m_coord;
 
+      IMC::DesiredPath m_dpath;
       //! Constructor.
       //! @param[in] name task name.
       //! @param[in] ctx context.
@@ -95,6 +96,12 @@ namespace MiniASV
         inf("X is %f, y is %f, z is %f\n", maneuver->lat, maneuver->lon, maneuver->z);
 
         //! Start Goto
+        m_dpath.start_z = 0;
+        m_dpath.start_lat = 0;
+        m_dpath.start_lon = 0;
+        m_dpath.end_lat = maneuver->lat;
+        m_dpath.end_lon = maneuver->lon;
+        dispatch(m_dpath);
       }
 
       //! Main loop.
@@ -104,7 +111,6 @@ namespace MiniASV
         while (!stopping())
         {
           waitForMessages(1.0);
-          // Coordinates::getTrackPosition();
         }
       }
     };
