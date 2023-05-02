@@ -89,7 +89,7 @@ namespace Control
         bool log_parcels;
       };
 
-      struct Task: public Tasks::Task
+      struct Task : public Tasks::Task
       {
         //! RPM PID controller
         DiscretePID m_rpm_pid;
@@ -128,94 +128,93 @@ namespace Control
         //! Task arguments.
         Arguments m_args;
 
-        Task(const std::string& name, Tasks::Context& ctx):
-          Tasks::Task(name, ctx),
-          m_previous_rpm(0.0),
-          m_common(false),
-          m_scope_ref(0)
+        Task(const std::string &name, Tasks::Context &ctx) : Tasks::Task(name, ctx),
+                                                             m_previous_rpm(0.0),
+                                                             m_common(false),
+                                                             m_scope_ref(0)
         {
           param("Maximum Thrust Actuation", m_args.act_max)
-          .defaultValue("1.0")
-          .description("Maximum Motor Command");
+              .defaultValue("1.0")
+              .description("Maximum Motor Command");
 
           param("Maximum Thrust Differential Actuation", m_args.act_diff_max)
-          .defaultValue("0.2")
-          .description("Maximum Motor Differential Command");
+              .defaultValue("0.2")
+              .description("Maximum Motor Differential Command");
 
           param("RPMs at Maximum Thrust", m_args.rpm_eos)
-          .defaultValue("2500")
-          .units(Units::RPM)
-          .description("End of scale value for RPM's at 100% of thurst");
+              .defaultValue("2500")
+              .units(Units::RPM)
+              .description("End of scale value for RPM's at 100% of thurst");
 
           param("Hardware RPMs Control", m_args.rpm_hardware)
-          .defaultValue("true")
-          .description("Hardware control of the motor's rpms");
+              .defaultValue("true")
+              .description("Hardware control of the motor's rpms");
 
           param("RPMs PID Gains", m_args.rpm_gains)
-          .defaultValue("")
-          .size(3)
-          .description("PID gains for RPM controller");
+              .defaultValue("")
+              .size(3)
+              .description("PID gains for RPM controller");
 
           param("RPMs Feedforward Gain", m_args.rpm_ffgain)
-          .defaultValue("0.5")
-          .description("RPM controller feedforward gain");
+              .defaultValue("0.5")
+              .description("RPM controller feedforward gain");
 
           param("MPS PID Gains", m_args.mps_gains)
-          .defaultValue("")
-          .size(3)
-          .description("PID gains for MPS controller");
+              .defaultValue("")
+              .size(3)
+              .description("PID gains for MPS controller");
 
           param("MPS Feedforward Gain", m_args.mps_ffgain)
-          .defaultValue("0.0")
-          .description("MPS controller feedforward gain");
+              .defaultValue("0.0")
+              .description("MPS controller feedforward gain");
 
           param("MPS Integral Limit", m_args.mps_max_int)
-          .defaultValue("-1.0")
-          .description("Limit for the integral term");
+              .defaultValue("-1.0")
+              .description("Limit for the integral term");
 
           param("Maximum RPM Acceleration", m_args.max_accel)
-          .defaultValue("70")
-          .units(Units::RPM)
-          .description("Maximum acceleration step to smooth speed ramp in mps control");
+              .defaultValue("70")
+              .units(Units::RPM)
+              .description("Maximum acceleration step to smooth speed ramp in mps control");
 
           param("Yaw PID Gains", m_args.yaw_gains)
-          .defaultValue("")
-          .size(3)
-          .description("PID gains for YAW controller");
+              .defaultValue("")
+              .size(3)
+              .description("PID gains for YAW controller");
 
           param("Maximum Heading Error to Thrust", m_args.yaw_max)
-          .defaultValue("30.0")
-          .description("Maximum admissable heading error to thrust");
+              .defaultValue("30.0")
+              .description("Maximum admissable heading error to thrust");
 
           param("Share Saturation", m_args.share)
-          .defaultValue("false")
-          .description("Share saturation");
+              .defaultValue("false")
+              .description("Share saturation");
 
           param("Entity Label - Port Motor", m_args.eid_port)
-          .defaultValue("Motor - Port")
-          .description("Entity label of port motor rpm");
+              .defaultValue("Motor - Port")
+              .description("Entity label of port motor rpm");
 
           param("Entity Label - Starboard Motor", m_args.eid_starboard)
-          .defaultValue("Motor - Starboard")
-          .description("Entity label of starboard motor rpm");
+              .defaultValue("Motor - Starboard")
+              .description("Entity label of starboard motor rpm");
 
           param("Minimum RPM Limit", m_args.min_rpm)
-          .defaultValue("200")
-          .units(Units::RPM)
-          .description("Minimum value admissible for desired RPMs");
+              .defaultValue("200")
+              .units(Units::RPM)
+              .description("Minimum value admissible for desired RPMs");
 
           param("Maximum RPM Limit", m_args.max_rpm)
-          .defaultValue("2000")
-          .units(Units::RPM)
-          .description("Maximum value admissible for desired RPMs");
+              .defaultValue("2000")
+              .units(Units::RPM)
+              .description("Maximum value admissible for desired RPMs");
 
           param("Ramp Actuation Limit", m_args.act_ramp)
-          .defaultValue("0.0")
-          .description("Ramp actuation limit when the value is rising in actuation per second");
+              .defaultValue("0.0")
+              .description("Ramp actuation limit when the value is rising in actuation per second");
 
           param("Log PID Parcels", m_args.log_parcels)
-          .defaultValue("false")
-          .description("Log the size of each PID parcel");
+              .defaultValue("false")
+              .description("Log the size of each PID parcel");
 
           m_desired_speed = 0.0;
           m_speed_units = IMC::SUNITS_PERCENTAGE;
@@ -350,7 +349,7 @@ namespace Control
         }
 
         void
-        consume(const IMC::Abort* msg)
+        consume(const IMC::Abort *msg)
         {
           if (msg->getDestination() != getSystemId())
             return;
@@ -361,7 +360,7 @@ namespace Control
         }
 
         void
-        consume(const IMC::EstimatedState* msg)
+        consume(const IMC::EstimatedState *msg)
         {
           if (msg->getSource() != getSystemId())
             return;
@@ -392,22 +391,22 @@ namespace Control
             // Velocity controller.
             switch (m_speed_units)
             {
-              case IMC::SUNITS_PERCENTAGE:
-                thrust_com = (m_desired_speed / 100.0);
-                break;
-              case IMC::SUNITS_METERS_PS:
-                thrust_com = rpmToThrust(rpm, mpsToRpm(msg->u, tstep), tstep);
-                break;
-              case IMC::SUNITS_RPM:
-                thrust_com = rpmToThrust(rpm, m_desired_speed, tstep);
-                m_previous_rpm = m_desired_speed;
-              default:
-                break;
+            case IMC::SUNITS_PERCENTAGE:
+              thrust_com = (m_desired_speed / 100.0);
+              break;
+            case IMC::SUNITS_METERS_PS:
+              thrust_com = rpmToThrust(rpm, mpsToRpm(msg->u, tstep), tstep);
+              break;
+            case IMC::SUNITS_RPM:
+              thrust_com = rpmToThrust(rpm, m_desired_speed, tstep);
+              m_previous_rpm = m_desired_speed;
+            default:
+              break;
             }
 
             // Limit differential when thrusting forward.
             thrust_diff = Math::trimValue(thrust_diff,
-                                          - m_args.act_diff_max,
+                                          -m_args.act_diff_max,
                                           m_args.act_diff_max);
           }
 
@@ -421,7 +420,7 @@ namespace Control
         }
 
         void
-        consume(const IMC::DesiredHeading* msg)
+        consume(const IMC::DesiredHeading *msg)
         {
           if (!isActive())
             return;
@@ -430,7 +429,7 @@ namespace Control
         }
 
         void
-        consume(const IMC::DesiredSpeed* msg)
+        consume(const IMC::DesiredSpeed *msg)
         {
           if (!isActive())
             return;
@@ -440,7 +439,7 @@ namespace Control
         }
 
         void
-        consume(const IMC::ControlLoops* msg)
+        consume(const IMC::ControlLoops *msg)
         {
           if (!(msg->mask & (IMC::CL_YAW | IMC::CL_SPEED)))
             return;
@@ -465,7 +464,7 @@ namespace Control
         }
 
         void
-        consume(const IMC::Rpm* msg)
+        consume(const IMC::Rpm *msg)
         {
           if (msg->getSourceEntity() == m_rpm_eid[0])
             m_rpm[0].value = msg->value;

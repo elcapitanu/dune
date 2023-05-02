@@ -39,7 +39,7 @@ namespace DUNE
   namespace Coordinates
   {
     void
-    toWGS84(const IMC::EstimatedState& estate, double& lat, double& lon, float& hae)
+    toWGS84(const IMC::EstimatedState &estate, double &lat, double &lon, float &hae)
     {
       // Define reference.
       lat = estate.lat;
@@ -51,7 +51,7 @@ namespace DUNE
     }
 
     void
-    toWGS84(const IMC::EstimatedState& estate, double& lat, double& lon)
+    toWGS84(const IMC::EstimatedState &estate, double &lat, double &lon)
     {
       // Use reference height.
       float hae = estate.height;
@@ -60,7 +60,7 @@ namespace DUNE
     }
 
     void
-    toWGS84(const IMC::SimulatedState& estate, double& lat, double& lon, float& hae)
+    toWGS84(const IMC::SimulatedState &estate, double &lat, double &lon, float &hae)
     {
       // Define reference.
       lat = estate.lat;
@@ -72,7 +72,7 @@ namespace DUNE
     }
 
     void
-    toWGS84(const IMC::SimulatedState& estate, double& lat, double& lon)
+    toWGS84(const IMC::SimulatedState &estate, double &lat, double &lon)
     {
       // Use reference height.
       float hae = estate.height;
@@ -89,6 +89,8 @@ namespace DUNE
       int lat_min = (int)lat_min_fp;
       int lat_min_frac = (lat_min_fp - lat_min) * 100000;
 
+      std::cout << "Latitude to NMEA: " << Utils::String::str("%02d%02d.%05d,%c", std::abs(lat_deg), lat_min, lat_min_frac, (lat_deg >= 0) ? 'N' : 'S') << std::endl;
+
       return Utils::String::str("%02d%02d.%05d,%c", std::abs(lat_deg), lat_min, lat_min_frac, (lat_deg >= 0) ? 'N' : 'S');
     }
 
@@ -101,11 +103,12 @@ namespace DUNE
       int lon_min = (int)lon_min_fp;
       int lon_min_frac = (lon_min_fp - lon_min) * 100000;
 
+      std::cout << "Longitude to NMEA: " << Utils::String::str("%03d%02d.%05d,%c", std::abs(lon_deg), lon_min, lon_min_frac, (lon_deg >= 0) ? 'E' : 'W') << std::endl;
       return Utils::String::str("%03d%02d.%05d,%c", std::abs(lon_deg), lon_min, lon_min_frac, (lon_deg >= 0) ? 'E' : 'W');
     }
 
     double
-    NMEAToLatitude(const std::string& str)
+    NMEAToLatitude(const std::string &str)
     {
       int lat_deg = 0;
       double lat_min = 0.0;
@@ -124,7 +127,7 @@ namespace DUNE
     }
 
     double
-    NMEAToLongitude(const std::string& str)
+    NMEAToLongitude(const std::string &str)
     {
       int lon_deg = 0;
       double lon_min = 0.0;

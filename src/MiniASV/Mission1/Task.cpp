@@ -31,6 +31,7 @@
 #include <DUNE/DUNE.hpp>
 #include <DUNE/Coordinates/General.hpp>
 #include <Maneuver/Multiplexer/Goto.hpp>
+#include <DUNE/Control/PathController.hpp>
 
 namespace MiniASV
 {
@@ -45,13 +46,18 @@ namespace MiniASV
     struct Task : public DUNE::Tasks::Task
     {
 
-      IMC::DesiredPath m_dpath;
+      double x = 0, y = 0;
+
+      // IMC::DesiredPath m_dpath;
       //! Constructor.
       //! @param[in] name task name.
       //! @param[in] ctx context.
       Task(const std::string &name, Tasks::Context &ctx) : DUNE::Tasks::Task(name, ctx)
       {
         bind<IMC::Goto>(this);
+        bind<IMC::EstimatedState>(this);
+        bind<IMC::StateReport>(this);
+        // bind<IMC::Temperature>(this);
       }
 
       //! Update internal state with new parameter values.
@@ -93,24 +99,89 @@ namespace MiniASV
       void
       consume(const IMC::Goto *maneuver)
       {
-        inf("X is %f, y is %f, z is %f\n", maneuver->lat, maneuver->lon, maneuver->z);
+        std::printf("X is %lf, y is %lf, z is %lf\n", maneuver->lat, maneuver->lon, maneuver->z);
 
-        //! Start Goto
-        m_dpath.start_z = 0;
-        m_dpath.start_lat = 0;
-        m_dpath.start_lon = 0;
-        m_dpath.end_lat = maneuver->lat;
-        m_dpath.end_lon = maneuver->lon;
-        dispatch(m_dpath);
+        std::cout << std::fixed;
+        std::cout << std::setprecision(30);
+        std::cout << "(X,Y,Z) = " << maneuver->lat << " " << maneuver->lon << " " << maneuver->z << std::endl;
+
+        // //! Start Goto
+        // inf("Start (lat, lon): %f , %f || End (lat, lon): %f , %f", m_dpath.start_lat, m_dpath.start_lon, m_dpath.end_lat, m_dpath.end_lon);
+
+        // m_dpath.start_z = 0;
+        // m_dpath.start_lat = 0;
+        // m_dpath.start_lon = 0;
+        // m_dpath.end_lat = -0.15198;
+        // m_dpath.end_lon = 0.71882;
+        // dispatch(m_dpath);
+      }
+
+      // void
+      // consume(const IMC::Temperature *maneuver)
+      // {
+      //   // inf("X is %lf, y is %lf, z is %lf\n", maneuver->lat, maneuver->lon, maneuver->z);
+
+      //   // //! Start Goto
+      //   std::printf("Start (lat, lon): %f , %f || End (lat, lon): %f , %f", m_dpath.start_lat, m_dpath.start_lon, m_dpath.end_lat, m_dpath.end_lon);
+
+      //   inf("Mama noooooo");
+
+      //   IMC::Goto m_goto;
+
+      //   m_goto.lat = -0.15198;
+      //   m_goto.lat = 0.71882;
+
+      //   dispatch(m_goto);
+
+      //   // m_dpath.start_z = 0;
+      //   // m_dpath.start_lat = 0;
+      //   // m_dpath.start_lon = 0;
+      //   // m_dpath.end_lat = -0.15198;
+      //   // m_dpath.end_lon = 0.71882;
+      //   // dispatch(m_dpath);
+      // }
+
+      void
+      consume(const IMC::EstimatedState *st)
+      {
+        // This is called way too much
+        // std::printf("ESTSTATE -- Latitude: %f, LOngitude: %f\n", st->lat, st->lon);
+
+        x = st->lat;
+        y = st->lon;
+
+        // std::cout << std::fixed;
+        // std::cout << std::setprecision(30);
+        // std::cout << "(X,Y) = " << st->lat << st->lon << std::endl;
+      }
+
+      // void
+      // consume(const IMC::PathControlState *pct)
+      // {
+      //   inf("PCT -- Start Latitude & LOngitude: %f,%f\n", pct->start_lat, pct->start_lon);
+      //   inf("PCT -- End Latitude & LOngitude: %f,%f\n", pct->end_lat, pct->end_lon);
+      // }
+
+      void
+      consume(const IMC::StateReport *sr)
+      {
+        std::cout << std::fixed;
+        std::cout << std::setprecision(30);
+        std::cout << "(X,Y) = " << sr->latitude << sr->longitude << std::endl;
       }
 
       //! Main loop.
       void
       onMain(void)
       {
+
         while (!stopping())
         {
+
           waitForMessages(1.0);
+          // std::cout << std::fixed;
+          // std::cout << std::setprecision(30);
+          // std::cout << "(X,Y) = " << x << y << std::endl;
         }
       }
     };

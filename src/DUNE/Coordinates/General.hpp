@@ -144,7 +144,7 @@ namespace DUNE
     getTrackPosition(const A &origin, double orientation, const B &point, double *x, double *y = nullptr)
     {
 
-      // std::printf("x: %0.5lf, y: %0.5lf\n", *x, *y);
+      // std::printf("x: %lf, y: %lf\n", *x, *y);
       double b, r;
       // printf("Hmmm how much is this called?\n");
       getBearingAndRange(origin, point, &b, &r);
