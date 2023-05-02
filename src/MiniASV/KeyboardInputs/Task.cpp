@@ -29,6 +29,7 @@
 
 // DUNE headers.
 #include <DUNE/DUNE.hpp>
+#include <string.h>
 // #include "Controller.hpp"
 
 namespace MiniASV
@@ -106,7 +107,7 @@ namespace MiniASV
       }
 
       void
-      dispatchData()
+      dispatchDataMotor()
       {
         m_tstamp = Clock::getSinceEpoch();
         m_pwmR.setTimeStamp(m_tstamp);
@@ -125,13 +126,35 @@ namespace MiniASV
         {
           waitForMessages(1.0);
 
-          int input;
+          std::string input;
 
           std::cin >> input;
 
-          m_pwmR.duty_cycle = m_pwmL.duty_cycle = input;
-          // commit test comment
-          dispatchData();
+          switch (input[0])
+          {
+          //! For motor commands
+          case 'm':
+          {
+            int value = std::stoi(input.substr(1, 3));
+            m_pwmR.duty_cycle = m_pwmL.duty_cycle = value;
+
+            dispatchDataMotor();
+            break;
+          }
+          //! For GoTo Commands. FIrst is x, second is y
+          case 'l':
+            int x = std::stoi(input.substr(1, 2));
+            int y = std::stoi(input.substr(3, 2));
+
+            // Send this info somewhere
+            IMC::Goto maneuver;
+            maneuver.lat = x;
+            maneuver.lon = y;
+            maneuver.z = 0;
+            dispatch(maneuver);
+
+            break;
+          }
         }
       }
     };
