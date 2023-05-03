@@ -307,6 +307,8 @@ namespace DUNE
         return;
       }
 
+      inf("Initial (lat, lon): %f, %f || End (lat,lon): %f, %f", dpath->start_lat, dpath->start_lon, dpath->end_lat, dpath->end_lon);
+
       const double now = Clock::get();
       const bool no_start = setStartPoint(now, dpath);
       setEndPoint(dpath);
@@ -316,6 +318,7 @@ namespace DUNE
 
       if (m_max_track_length > 0 && m_ts.track_length > m_max_track_length)
       {
+        inf("Desired track length: %f , Max track: %f", m_ts.track_length, m_max_track_length);
         signalError(DTR("track length is too long"));
         return;
       }

@@ -49,6 +49,7 @@ namespace MiniASV
       double x = 0, y = 0;
 
       // IMC::DesiredPath m_dpath;
+      IMC::EstimatedState m_eststate;
       //! Constructor.
       //! @param[in] name task name.
       //! @param[in] ctx context.
@@ -56,7 +57,7 @@ namespace MiniASV
       {
         bind<IMC::Goto>(this);
         bind<IMC::EstimatedState>(this);
-        bind<IMC::StateReport>(this);
+        // bind<IMC::StateReport>(this);
         // bind<IMC::Temperature>(this);
       }
 
@@ -96,6 +97,20 @@ namespace MiniASV
       {
       }
 
+      // Goto 1: 41.18366783, -8.7083427
+      // Goto 2: 41.18386553, -8.70834052
+      // Goto 3: 41.18386377, -8.70828888
+      // Goto 4: 41.18367465, -8.70828537
+      // Goto 5: 41.18367452, -8.70810028
+      // Goto 6: 41.18385948, -8.70810045
+
+      /***************Corners***************/
+
+      // IE: 41.18365977, -8.70836583
+      // SE: 41.18388433, -8.70836548
+      // ID: 41.18365927, -8.7080671
+      // SD: 41.18388408, -8.70806743
+
       void
       consume(const IMC::Goto *maneuver)
       {
@@ -108,44 +123,19 @@ namespace MiniASV
         // //! Start Goto
         // inf("Start (lat, lon): %f , %f || End (lat, lon): %f , %f", m_dpath.start_lat, m_dpath.start_lon, m_dpath.end_lat, m_dpath.end_lon);
 
-        // m_dpath.start_z = 0;
-        // m_dpath.start_lat = 0;
-        // m_dpath.start_lon = 0;
-        // m_dpath.end_lat = -0.15198;
-        // m_dpath.end_lon = 0.71882;
-        // dispatch(m_dpath);
+        // fp64_t latitute, longitude;
+
+        // latitude = m_eststate.lat;
+        // longitude = m_eststate.lon;
+
+        std::cout << std::fixed;
+        std::cout << std::setprecision(30);
+        std::cout << "Initial(X,Y) = " << m_eststate.lat << m_eststate.lon << std::endl;
       }
-
-      // void
-      // consume(const IMC::Temperature *maneuver)
-      // {
-      //   // inf("X is %lf, y is %lf, z is %lf\n", maneuver->lat, maneuver->lon, maneuver->z);
-
-      //   // //! Start Goto
-      //   std::printf("Start (lat, lon): %f , %f || End (lat, lon): %f , %f", m_dpath.start_lat, m_dpath.start_lon, m_dpath.end_lat, m_dpath.end_lon);
-
-      //   inf("Mama noooooo");
-
-      //   IMC::Goto m_goto;
-
-      //   m_goto.lat = -0.15198;
-      //   m_goto.lat = 0.71882;
-
-      //   dispatch(m_goto);
-
-      //   // m_dpath.start_z = 0;
-      //   // m_dpath.start_lat = 0;
-      //   // m_dpath.start_lon = 0;
-      //   // m_dpath.end_lat = -0.15198;
-      //   // m_dpath.end_lon = 0.71882;
-      //   // dispatch(m_dpath);
-      // }
 
       void
       consume(const IMC::EstimatedState *st)
       {
-        // This is called way too much
-        // std::printf("ESTSTATE -- Latitude: %f, LOngitude: %f\n", st->lat, st->lon);
 
         x = st->lat;
         y = st->lon;
@@ -161,14 +151,6 @@ namespace MiniASV
       //   inf("PCT -- Start Latitude & LOngitude: %f,%f\n", pct->start_lat, pct->start_lon);
       //   inf("PCT -- End Latitude & LOngitude: %f,%f\n", pct->end_lat, pct->end_lon);
       // }
-
-      void
-      consume(const IMC::StateReport *sr)
-      {
-        std::cout << std::fixed;
-        std::cout << std::setprecision(30);
-        std::cout << "(X,Y) = " << sr->latitude << sr->longitude << std::endl;
-      }
 
       //! Main loop.
       void

@@ -143,13 +143,23 @@ namespace MiniASV
           }
           //! For GoTo Commands. FIrst is x, second is y
           case 'l':
-            int x = std::stoi(input.substr(1, 2));
-            int y = std::stoi(input.substr(3, 2));
+            int comma = input.find(',');
+            std::cout << "Comma is in " << comma << std::endl;
+            float x = std::stof(input.substr(1, comma));
+            float y = std::stof(input.substr(comma + 1, input.size()));
 
-            // Send this info somewhere
+            std::cout << "(x, y) " << x << ", " << y << std::endl;
+
             IMC::Goto maneuver;
-            maneuver.lat = x;
-            maneuver.lon = y;
+
+            if ((x > 0) && (x < 20) && (y > 0) & (y < 20))
+            {
+              // maneuver.lon = (x - 0) * (-8.7080671 - -8.70836583) / (20 - 0) + -8.70836583;
+              // maneuver.lat = (y - 0) * (41.18388408 - 41.18365927) / (20 - 0) + 41.18365927;
+              maneuver.lon = (x - 0) * (-8.7080671 - -8.70836583) / (20 - 0);
+              maneuver.lat = (y - 0) * (41.18388408 - 41.18365927) / (20 - 0);
+            }
+
             maneuver.z = 0;
             dispatch(maneuver);
 
