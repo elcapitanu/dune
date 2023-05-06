@@ -142,7 +142,7 @@ namespace MiniASV
 
         // std::cout << std::fixed;
         // std::cout << std::setprecision(30);
-        // std::cout << "(X,Y) = " << st->lat << st->lon << std::endl;
+        // std::cout << "(X,Y) = " << st->x << st->y << std::endl;
       }
 
       // void

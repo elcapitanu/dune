@@ -29,6 +29,8 @@
 
 // DUNE headers.
 #include <DUNE/DUNE.hpp>
+#include <DUNE/Coordinates/WGS84.hpp>
+#include <DUNE/Coordinates/General.hpp>
 #include <string.h>
 // #include "Controller.hpp"
 
@@ -44,6 +46,8 @@ namespace MiniASV
 
     struct Task : public DUNE::Tasks::Task
     {
+
+      IMC::EstimatedState m_st;
       //! Timer
       Counter<double> m_wdog;
       //! IMC msg
@@ -152,13 +156,27 @@ namespace MiniASV
 
             IMC::Goto maneuver;
 
-            if ((x > 0) && (x < 20) && (y > 0) & (y < 20))
+            if ((x > 0) && (x <= 20) && (y > 0) & (y <= 20))
             {
-              // maneuver.lon = (x - 0) * (-8.7080671 - -8.70836583) / (20 - 0) + -8.70836583;
-              // maneuver.lat = (y - 0) * (41.18388408 - 41.18365927) / (20 - 0) + 41.18365927;
-              maneuver.lon = (x - 0) * (-8.7080671 - -8.70836583) / (20 - 0);
-              maneuver.lat = (y - 0) * (41.18388408 - 41.18365927) / (20 - 0);
+              maneuver.lon = (x - 0) * (-8.7080671 - -8.70836583) / (20 - 0) - 8.70836583;
+              maneuver.lat = (y - 0) * (41.18388408 - 41.18365927) / (20 - 0) + 41.18365927;
+              std::cout << std::fixed;
+              std::cout << std::setprecision(30);
+              std::cout << "First(X,Y) = " << maneuver.lat << maneuver.lon << std::endl;
+              // maneuver.lon = (x - 0) * (-8.7080671 - -8.70836583) / (20 - 0);
+              // maneuver.lat = (y - 0) * (41.18388408 - 41.18365927) / (20 - 0);
             }
+            // WGS84::displace()
+            // Coordinates::toWGS84(m_st, maneuver.lat, maneuver.lon);
+
+            maneuver.lon = DUNE::Math::Angles::radians(maneuver.lon);
+            maneuver.lat = DUNE::Math::Angles::radians(maneuver.lat);
+
+            std::cout << std::fixed;
+            std::cout << std::setprecision(30);
+            std::cout << "Last(X,Y) = " << maneuver.lat << maneuver.lon << std::endl;
+            // maneuver.lat = 0.718790586427262900848234039586;
+            // maneuver.lat = -0.151989547887982384688498882497;
 
             maneuver.z = 0;
             dispatch(maneuver);
