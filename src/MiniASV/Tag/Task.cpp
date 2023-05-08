@@ -185,6 +185,8 @@ namespace MiniASV
           param = std::strtok(NULL, ",");
           m_distance2 = atof(param);
 
+
+          // anchors pos: (0,0) and (1,0)
           m_x = (pow(m_distance1, 2) + pow(1, 2) - pow(m_distance2, 2)) / 2;
           m_y = sqrt(pow(m_distance1, 2) - pow(m_x, 2));
 
