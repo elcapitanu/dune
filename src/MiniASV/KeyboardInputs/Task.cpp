@@ -48,6 +48,9 @@ namespace MiniASV
     {
 
       IMC::EstimatedState m_st;
+
+      IMC::PlanControl m_pc;
+
       //! Timer
       Counter<double> m_wdog;
       //! IMC msg
@@ -148,11 +151,11 @@ namespace MiniASV
           //! For GoTo Commands. FIrst is x, second is y
           case 'l':
             int comma = input.find(',');
-            std::cout << "Comma is in " << comma << std::endl;
+            // std::cout << "Comma is in " << comma << std::endl;
             float x = std::stof(input.substr(1, comma));
             float y = std::stof(input.substr(comma + 1, input.size()));
 
-            std::cout << "(x, y) " << x << ", " << y << std::endl;
+            // std::cout << "(x, y) " << x << ", " << y << std::endl;
 
             IMC::Goto maneuver;
 
@@ -160,23 +163,19 @@ namespace MiniASV
             {
               maneuver.lon = (x - 0) * (-8.7080671 - -8.70836583) / (20 - 0) - 8.70836583;
               maneuver.lat = (y - 0) * (41.18388408 - 41.18365927) / (20 - 0) + 41.18365927;
-              std::cout << std::fixed;
-              std::cout << std::setprecision(30);
-              std::cout << "First(X,Y) = " << maneuver.lat << maneuver.lon << std::endl;
-              // maneuver.lon = (x - 0) * (-8.7080671 - -8.70836583) / (20 - 0);
-              // maneuver.lat = (y - 0) * (41.18388408 - 41.18365927) / (20 - 0);
             }
-            // WGS84::displace()
-            // Coordinates::toWGS84(m_st, maneuver.lat, maneuver.lon);
 
             maneuver.lon = DUNE::Math::Angles::radians(maneuver.lon);
             maneuver.lat = DUNE::Math::Angles::radians(maneuver.lat);
 
+            spew("PC Values. Type - %d, Operation - %d, Req ID - %d, Flags - %d, ExtraInfo - %s", m_pc.type, m_pc.op, m_pc.request_id, m_pc.flags, m_pc.info);
+
+            m_pc.type = 0; // Request maneuver activation
+            dispatch(m_pc);
+
             std::cout << std::fixed;
             std::cout << std::setprecision(30);
-            std::cout << "Last(X,Y) = " << maneuver.lat << maneuver.lon << std::endl;
-            // maneuver.lat = 0.718790586427262900848234039586;
-            // maneuver.lat = -0.151989547887982384688498882497;
+            std::cout << "(Lat,Lon) = " << maneuver.lat << maneuver.lon << std::endl;
 
             maneuver.z = 0;
             dispatch(maneuver);

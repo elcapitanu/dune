@@ -114,23 +114,7 @@ namespace MiniASV
       void
       consume(const IMC::Goto *maneuver)
       {
-        std::printf("X is %lf, y is %lf, z is %lf\n", maneuver->lat, maneuver->lon, maneuver->z);
-
-        std::cout << std::fixed;
-        std::cout << std::setprecision(30);
-        std::cout << "(X,Y,Z) = " << maneuver->lat << " " << maneuver->lon << " " << maneuver->z << std::endl;
-
-        // //! Start Goto
-        // inf("Start (lat, lon): %f , %f || End (lat, lon): %f , %f", m_dpath.start_lat, m_dpath.start_lon, m_dpath.end_lat, m_dpath.end_lon);
-
-        // fp64_t latitute, longitude;
-
-        // latitude = m_eststate.lat;
-        // longitude = m_eststate.lon;
-
-        std::cout << std::fixed;
-        std::cout << std::setprecision(30);
-        std::cout << "Initial(X,Y) = " << m_eststate.lat << m_eststate.lon << std::endl;
+        inf("A GOTO message has been dispatched, tell me your timeline babbyyyy");
       }
 
       void
@@ -139,18 +123,7 @@ namespace MiniASV
 
         x = st->lat;
         y = st->lon;
-
-        // std::cout << std::fixed;
-        // std::cout << std::setprecision(30);
-        // std::cout << "(X,Y) = " << st->x << st->y << std::endl;
       }
-
-      // void
-      // consume(const IMC::PathControlState *pct)
-      // {
-      //   inf("PCT -- Start Latitude & LOngitude: %f,%f\n", pct->start_lat, pct->start_lon);
-      //   inf("PCT -- End Latitude & LOngitude: %f,%f\n", pct->end_lat, pct->end_lon);
-      // }
 
       //! Main loop.
       void
@@ -161,9 +134,6 @@ namespace MiniASV
         {
 
           waitForMessages(1.0);
-          // std::cout << std::fixed;
-          // std::cout << std::setprecision(30);
-          // std::cout << "(X,Y) = " << x << y << std::endl;
         }
       }
     };
