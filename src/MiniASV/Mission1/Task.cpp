@@ -56,7 +56,10 @@ namespace MiniASV
       Task(const std::string &name, Tasks::Context &ctx) : DUNE::Tasks::Task(name, ctx)
       {
         bind<IMC::Goto>(this);
-        bind<IMC::EstimatedState>(this);
+        // bind<IMC::EstimatedState>(this);
+        bind<IMC::PlanSpecification>(this);
+        bind<IMC::PlanManeuver>(this);
+
         // bind<IMC::StateReport>(this);
         // bind<IMC::Temperature>(this);
       }
@@ -118,16 +121,19 @@ namespace MiniASV
       }
 
       void
-      consume(const IMC::EstimatedState *st)
+      consume(const IMC::PlanSpecification *ps)
       {
+        inf("Plan Specification -- ID: %s || Descripttion: %s || Start man ID: %s", ps->plan_id.c_str(), ps->description.c_str(), ps->start_man_id.c_str());
+      }
 
-        x = st->lat;
-        y = st->lon;
+      void
+      consume(const IMC::PlanManeuver *pm)
+      {
+        inf("Plan Maneuver -- Man ID: %s", pm->maneuver_id.c_str());
       }
 
       //! Main loop.
-      void
-      onMain(void)
+      void onMain(void)
       {
 
         while (!stopping())

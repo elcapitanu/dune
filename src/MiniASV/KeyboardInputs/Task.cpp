@@ -165,20 +165,39 @@ namespace MiniASV
               maneuver.lat = (y - 0) * (41.18388408 - 41.18365927) / (20 - 0) + 41.18365927;
             }
 
-            maneuver.lon = DUNE::Math::Angles::radians(maneuver.lon);
-            maneuver.lat = DUNE::Math::Angles::radians(maneuver.lat);
+            // maneuver.lon = DUNE::Math::Angles::radians(maneuver.lon);
+            // maneuver.lat = DUNE::Math::Angles::radians(maneuver.lat);
 
-            spew("PC Values. Type - %d, Operation - %d, Req ID - %d, Flags - %d, ExtraInfo - %s", m_pc.type, m_pc.op, m_pc.request_id, m_pc.flags, m_pc.info);
+            spew("PC Values. Type - %d, Operation - %d, Req ID - %d, Flags - %d, ExtraInfo - %s", m_pc.type, m_pc.op, m_pc.request_id, m_pc.flags, m_pc.info.c_str());
 
-            m_pc.type = 0; // Request maneuver activation
-            dispatch(m_pc);
+            IMC::PlanGeneration m_gen;
 
-            std::cout << std::fixed;
-            std::cout << std::setprecision(30);
-            std::cout << "(Lat,Lon) = " << maneuver.lat << maneuver.lon << std::endl;
+            m_gen.op = IMC::PlanGeneration::OP_REQUEST;
+            // inf("Goto ID %d", IMC::Goto::getIdStatic());
+            m_gen.plan_id = "go"; // Goto ID
+            m_gen.params = "loc=;lat=" + std::to_string(maneuver.lat) + ";lon=" + std::to_string(maneuver.lon) + ";depth=0";
+            inf("params: %s", m_gen.params.c_str());
+            // m_gen.params << "loc=;lat=" << maneuver.lat << ";lon=" << maneuver.lon << ";depth=0";
+            m_gen.cmd = IMC::PlanGeneration::CMD_GENERATE;
+            dispatch(m_gen);
 
-            maneuver.z = 0;
-            dispatch(maneuver);
+            m_gen.cmd = IMC::PlanGeneration::CMD_EXECUTE;
+            dispatch(m_gen);
+
+            // m_pc.type = 0; // Request maneuver activation
+            // m_pc.op = 0;   // 0  or 3?
+            // m_pc.arg = NULL;
+            // m_pc.request_id = ;
+            // m_pc.plan_id = m_gen.plan_id;
+
+            // dispatch(m_pc);
+
+            // std::cout << std::fixed;
+            // std::cout << std::setprecision(30);
+            // std::cout << "(Lat,Lon) = " << maneuver.lat << maneuver.lon << std::endl;
+
+            // maneuver.z = 0;
+            // dispatch(maneuver);
 
             break;
           }

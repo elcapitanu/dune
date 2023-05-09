@@ -68,46 +68,45 @@ namespace Plan
       std::string recovery_plan;
     };
 
-    struct Task: public DUNE::Tasks::Task
+    struct Task : public DUNE::Tasks::Task
     {
       //! Task arguments.
       Arguments m_args;
       //! Stores the last estimated state;
-      IMC::EstimatedState* m_estate;
+      IMC::EstimatedState *m_estate;
       //! Stores the last LblConfig message
-      IMC::LblConfig* m_last_lbl_config;
+      IMC::LblConfig *m_last_lbl_config;
       //! map for storing last received announces
       std::map<unsigned int, IMC::Announce> m_last_announces;
 
       //! Class constructor
-      Task(const std::string& name, Tasks::Context& ctx):
-        DUNE::Tasks::Task(name, ctx),
-        m_estate(NULL),
-        m_last_lbl_config(NULL)
+      Task(const std::string &name, Tasks::Context &ctx) : DUNE::Tasks::Task(name, ctx),
+                                                           m_estate(NULL),
+                                                           m_last_lbl_config(NULL)
       {
         param("Dive depth", m_args.dive_depth)
-        .description("Depth to dive in response to 'dive' command")
-        .defaultValue("5.0");
+            .description("Depth to dive in response to 'dive' command")
+            .defaultValue("5.0");
 
         param("Traveling depth", m_args.travel_depth)
-        .description("Depth to use when traveling (Goto maneuvers)")
-        .defaultValue("1.0");
+            .description("Depth to use when traveling (Goto maneuvers)")
+            .defaultValue("1.0");
 
         param("Dive seconds", m_args.dive_time)
-        .description("Time to be under water in response to 'dive' command (seconds)")
-        .defaultValue("300");
+            .description("Time to be under water in response to 'dive' command (seconds)")
+            .defaultValue("300");
 
         param("Loiter radius", m_args.radius)
-        .description("Radius of generated loiter and station keeping maneuvers")
-        .defaultValue("10.0");
+            .description("Radius of generated loiter and station keeping maneuvers")
+            .defaultValue("10.0");
 
         param("RPM Speed", m_args.speed_rpms)
-        .description("Speed in RPMs to be used in the generated maneuvers")
-        .defaultValue("1000");
+            .description("Speed in RPMs to be used in the generated maneuvers")
+            .defaultValue("1000");
 
         param("Generate At Boot", m_args.generate_at_boot)
-        .description("Set of commands for plans to generate at boot")
-        .defaultValue("");
+            .description("Set of commands for plans to generate at boot")
+            .defaultValue("");
 
         m_ctx.config.get("General", "Maximum Underwater RPMs", "1700.0", m_args.max_rpms);
         m_ctx.config.get("General", "Recovery Plan", "dislodge", m_args.recovery_plan);
@@ -128,14 +127,14 @@ namespace Plan
 
       //! Stores the announce in the map (one announce per system id).
       void
-      consume(const IMC::Announce* msg)
+      consume(const IMC::Announce *msg)
       {
-        m_last_announces.insert(std::pair<unsigned int, Announce>(msg->getSource(),*msg));
+        m_last_announces.insert(std::pair<unsigned int, Announce>(msg->getSource(), *msg));
       }
 
       //! Stores the last received EstimatedState message.
       void
-      consume(const IMC::EstimatedState* msg)
+      consume(const IMC::EstimatedState *msg)
       {
         if (msg->getSource() != getSystemId())
           return;
@@ -155,7 +154,7 @@ namespace Plan
 
       //! Stores the last received LblConfig message.
       void
-      consume(const IMC::LblConfig* msg)
+      consume(const IMC::LblConfig *msg)
       {
         if (msg->op != IMC::LblConfig::OP_SET_CFG)
           return;
@@ -196,7 +195,7 @@ namespace Plan
       //! <em>dislodge</em>:
       //!   - Attempt to unstuck the vehicle from an entangled condition.
       void
-      consume(const IMC::PlanGeneration* msg)
+      consume(const IMC::PlanGeneration *msg)
       {
         if (msg->op != IMC::PlanGeneration::OP_REQUEST)
           return;
@@ -300,7 +299,7 @@ namespace Plan
       //! @param[out] depth where the current depth will be stored
       //! @returns true if it was possible to get position or false otherwise.
       bool
-      getCurrentPosition(double* lat, double* lon, double* depth)
+      getCurrentPosition(double *lat, double *lon, double *depth)
       {
         if (m_estate == NULL)
           return false;
@@ -321,7 +320,7 @@ namespace Plan
       //! to the order of this vector).
       //! @param[out] result The resulting PlanSpecification will be stored here.
       void
-      sequentialPlan(std::string plan_id, const IMC::MessageList<IMC::Maneuver>* maneuvers, IMC::PlanSpecification& result)
+      sequentialPlan(std::string plan_id, const IMC::MessageList<IMC::Maneuver> *maneuvers, IMC::PlanSpecification &result)
       {
         IMC::PlanManeuver last_man;
 
@@ -367,7 +366,7 @@ namespace Plan
       //! @param[out] lat where the latitude will be updated
       //! @param[out] lon where the longitude will be updated
       void
-      updatePositionFromBeacon(const std::string& match, const IMC::LblBeacon* msg, double* lat, double* lon)
+      updatePositionFromBeacon(const std::string &match, const IMC::LblBeacon *msg, double *lat, double *lon)
       {
         if (msg == NULL)
           return;
@@ -389,10 +388,10 @@ namespace Plan
       //! @returns true if a plan was actually generated or false if
       //! result wasn't touched.
       bool
-      generate(const std::string& plan_id, TupleList& params, IMC::PlanSpecification& result)
+      generate(const std::string &plan_id, TupleList &params, IMC::PlanSpecification &result)
       {
         result.plan_id = plan_id;
-        //result.description = DTR("Plan generated automatically by DUNE.");
+        // result.description = DTR("Plan generated automatically by DUNE.");
 
         inf(DTR("generating plan from '%s' template..."), plan_id.c_str());
 
@@ -400,6 +399,7 @@ namespace Plan
         if (plan_id == "go" || plan_id == "sk")
         {
           // The location can be given either by the 'loc' parameter or 'lat' / 'lon'
+          inf("loc: %s || lat: %f || lon: %f || depth: %f", params.get("loc").c_str(), Angles::radians(params.get("lat", 0.0)), Angles::radians(params.get("lon", 0.0)), params.get("depth", (double)-1));
           std::string loc = params.get("loc");
           double lat = Angles::radians(params.get("lat", 0.0));
           double lon = Angles::radians(params.get("lon", 0.0));
@@ -448,7 +448,7 @@ namespace Plan
             // only generates a goto if the template is go, otherwise generates only a station keeping
             if (plan_id == "go")
             {
-              IMC::Goto* go_near = new IMC::Goto();
+              IMC::Goto *go_near = new IMC::Goto();
               go_near->lat = lat;
               go_near->lon = lon;
               go_near->z = depth;
@@ -460,7 +460,7 @@ namespace Plan
               delete go_near;
             }
 
-            IMC::StationKeeping* at_surface = new IMC::StationKeeping();
+            IMC::StationKeeping *at_surface = new IMC::StationKeeping();
             at_surface->duration = 60;
             at_surface->lat = lat;
             at_surface->lon = lon;
@@ -491,7 +491,7 @@ namespace Plan
 
           IMC::MessageList<IMC::Maneuver> maneuvers;
 
-          IMC::Loiter* loiter = new IMC::Loiter();
+          IMC::Loiter *loiter = new IMC::Loiter();
           loiter->lat = lat;
           loiter->lon = lon;
           loiter->z = depth;
@@ -532,7 +532,7 @@ namespace Plan
           double lat, lon, depth;
           getCurrentPosition(&lat, &lon, &depth);
 
-          IMC::Elevator* surface = new IMC::Elevator();
+          IMC::Elevator *surface = new IMC::Elevator();
           surface->flags = IMC::Elevator::FLG_CURR_POS;
           surface->end_z = 0;
           surface->end_z_units = IMC::Z_DEPTH;
@@ -545,7 +545,7 @@ namespace Plan
 
           delete surface;
 
-          IMC::StationKeeping* at_surface = new IMC::StationKeeping();
+          IMC::StationKeeping *at_surface = new IMC::StationKeeping();
           at_surface->duration = 120;
           at_surface->lat = lat;
           at_surface->lon = lon;
@@ -573,7 +573,7 @@ namespace Plan
           double lat, lon, depth;
           getCurrentPosition(&lat, &lon, &depth);
 
-          IMC::Loiter* loiter = new IMC::Loiter();
+          IMC::Loiter *loiter = new IMC::Loiter();
           loiter->lat = lat;
           loiter->lon = lon;
           loiter->z = 0.0f;
@@ -611,18 +611,19 @@ namespace Plan
           double popup = params.get("popup", 30);
           double pitch = params.get("pitch", 15);
           double time = 0;
-          double radius = std::sqrt((size * size) /2);
+          double radius = std::sqrt((size * size) / 2);
           double ang = Angles::radians(45.0 + rot);
           int i;
 
           getCurrentPosition(&curlat, &curlon, &curdepth);
 
-          if (lat == 0 && lon == 0) {
+          if (lat == 0 && lon == 0)
+          {
             lat = curlat;
             lon = curlon;
           }
           time = WGS84::distance(curlat, curlon, 0, lat, lon, 0) / speed;
-          IMC::Goto* first = new IMC::Goto();
+          IMC::Goto *first = new IMC::Goto();
           first->lat = lat;
           first->lon = lon;
           first->z = mindepth;
@@ -633,13 +634,13 @@ namespace Plan
           maneuvers.push_back(*first);
           if (popup > 0)
           {
-            IMC::PopUp * p = new IMC::PopUp();
+            IMC::PopUp *p = new IMC::PopUp();
             p->lat = first->lat;
             p->lon = first->lon;
             p->radius = 20;
             p->z = 0;
             p->z_units = IMC::Z_DEPTH;
-            p->duration = (int) popup;
+            p->duration = (int)popup;
             p->speed = first->speed;
             p->speed_units = first->speed_units;
             maneuvers.push_back(*p);
@@ -647,29 +648,30 @@ namespace Plan
           }
           delete first;
 
-          for (i = 0; i < 4; i++) {
-            IMC::YoYo * yoyo = new IMC::YoYo();
+          for (i = 0; i < 4; i++)
+          {
+            IMC::YoYo *yoyo = new IMC::YoYo();
             yoyo->lat = lat;
             yoyo->lon = lon;
             yoyo->speed = speed;
             yoyo->speed_units = IMC::SUNITS_METERS_PS;
-            yoyo->amplitude = (maxdepth - mindepth)/2;
+            yoyo->amplitude = (maxdepth - mindepth) / 2;
             yoyo->z = (mindepth + maxdepth) / 2;
             yoyo->z_units = IMC::Z_DEPTH;
             yoyo->pitch = Angles::radians(pitch);
-            ang =  Angles::radians(i * 90 + 135 + rot);
+            ang = Angles::radians(i * 90 + 135 + rot);
             time += size / speed;
             WGS84::displace(std::sin(ang) * radius + time * vn, std::cos(ang) * radius + time * ve, &(yoyo->lat), &(yoyo->lon));
             maneuvers.push_back(*yoyo);
             if (popup > 0)
             {
-              IMC::PopUp * pop = new IMC::PopUp();
+              IMC::PopUp *pop = new IMC::PopUp();
               pop->lat = yoyo->lat;
               pop->lon = yoyo->lon;
               pop->radius = 20;
               pop->z = 0;
               pop->z_units = IMC::Z_DEPTH;
-              pop->duration = (int) popup;
+              pop->duration = (int)popup;
               pop->speed = yoyo->speed;
               pop->speed_units = yoyo->speed_units;
               maneuvers.push_back(*pop);
@@ -698,17 +700,18 @@ namespace Plan
           double rot = params.get("rot", 0.0);
           double popup = params.get("popup", 30);
           double pitch = params.get("pitch", 15);
-          double radius = std::sqrt((size * size) /2);
+          double radius = std::sqrt((size * size) / 2);
           double ang = Angles::radians(-45.0 + rot);
 
           getCurrentPosition(&curlat, &curlon, &curdepth);
 
-          if (lat == 0 && lon == 0) {
+          if (lat == 0 && lon == 0)
+          {
             lat = curlat;
             lon = curlon;
           }
 
-          IMC::Goto* first = new IMC::Goto();
+          IMC::Goto *first = new IMC::Goto();
           first->lat = lat;
           first->lon = lon;
           first->z = mindepth;
@@ -736,12 +739,12 @@ namespace Plan
           } */
           delete first;
 
-          IMC::YoYo * yoyo = new IMC::YoYo();
+          IMC::YoYo *yoyo = new IMC::YoYo();
           yoyo->lat = lat;
           yoyo->lon = lon;
           yoyo->speed = speed;
           yoyo->speed_units = IMC::SUNITS_METERS_PS;
-          yoyo->amplitude = (maxdepth - mindepth)/2;
+          yoyo->amplitude = (maxdepth - mindepth) / 2;
           yoyo->z = (mindepth + maxdepth) / 2;
           yoyo->z_units = IMC::Z_DEPTH;
           yoyo->pitch = Angles::radians(pitch);
@@ -757,15 +760,15 @@ namespace Plan
           points(1, 1) = radius;
           points(2, 0) = std::atan2(radius / 2, radius / 4) + Angles::radians(rot);
           points(2, 1) = minradius;
-          points(3, 0) = std::atan2(- radius / 2, radius / 4) + Angles::radians(rot);
+          points(3, 0) = std::atan2(-radius / 2, radius / 4) + Angles::radians(rot);
           points(3, 1) = minradius;
-          points(4, 0) = std::atan2(- radius / 2, 0) + Angles::radians(rot);
+          points(4, 0) = std::atan2(-radius / 2, 0) + Angles::radians(rot);
           points(4, 1) = size / 2;
           points(5, 0) = std::atan2(radius / 2, 0) + Angles::radians(rot);
           points(5, 1) = size / 2;
-          points(6, 0) = std::atan2(radius / 2, - radius / 4) + Angles::radians(rot);
+          points(6, 0) = std::atan2(radius / 2, -radius / 4) + Angles::radians(rot);
           points(6, 1) = minradius;
-          points(7, 0) = std::atan2(- radius / 2, - radius / 4) + Angles::radians(rot);
+          points(7, 0) = std::atan2(-radius / 2, -radius / 4) + Angles::radians(rot);
           points(7, 1) = minradius;
           points(8, 0) = Angles::radians(45 + 180 + rot);
           points(8, 1) = radius;
@@ -784,13 +787,13 @@ namespace Plan
 
           if (popup > 0)
           {
-            IMC::PopUp * pop = new IMC::PopUp();
+            IMC::PopUp *pop = new IMC::PopUp();
             pop->lat = lat;
             pop->lon = lon;
             pop->radius = 20;
             pop->z = 0;
             pop->z_units = IMC::Z_DEPTH;
-            pop->duration = (int) popup;
+            pop->duration = (int)popup;
             pop->speed = yoyo->speed;
             pop->speed_units = yoyo->speed_units;
             maneuvers.push_back(*pop);
@@ -807,7 +810,7 @@ namespace Plan
         {
           IMC::MessageList<IMC::Maneuver> maneuvers;
 
-          IMC::Dislodge* dislodge = new IMC::Dislodge();
+          IMC::Dislodge *dislodge = new IMC::Dislodge();
           dislodge->rpm = params.get("rpm", m_args.max_rpms);
           dislodge->direction = IMC::Dislodge::DIR_AUTO;
           maneuvers.push_back(*dislodge);

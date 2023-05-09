@@ -267,7 +267,7 @@ namespace Plan
       void
       consume(const IMC::ManeuverControlState *msg)
       {
-        spew("Que linda mensagem, vai ser bem controlado");
+        // spew("Que linda mensagem, vai ser bem controlado");
         m_mcs = *msg;
 
         if (msg->state == IMC::ManeuverControlState::MCS_DONE)
@@ -284,7 +284,7 @@ namespace Plan
       void
       consume(const IMC::EntityInfo *msg)
       {
-        spew("apazing entity info");
+        // spew("apazing entity info");
         m_cinfo.insert(std::pair<std::string, IMC::EntityInfo>(msg->label, *msg));
       }
 
@@ -572,6 +572,7 @@ namespace Plan
         {
           m_requests.push(*pc);
           debug("saved request %u", pc->request_id);
+          inf("saved request %u", pc->request_id);
           spew("saved request %u", pc->request_id);
           return;
         }
@@ -591,21 +592,23 @@ namespace Plan
       processRequest(const IMC::PlanControl *pc)
       {
 
-        spew("PC Values before Process Request. Type - %d, Operation - %d, Req ID - %d, Flags - %d, ExtraInfo - %s", pc->type, pc->op, pc->request_id, pc->flags, pc->info);
+        spew("PC Values before Process Request. Type - %d, Operation - %d, Req ID - %d, Flags - %d, ExtraInfo - %s", pc->type, pc->op, pc->request_id, pc->flags, pc->info.c_str());
 
         if (pc->getDestination() != getSystemId() && pc->getDestination() != m_ctx.resolver.resolve("broadcast"))
         {
+          spew("ERROR, Dest & SysID & Resolver: %d , %d, %d", pc->getDestination(), getSystemId(), m_ctx.resolver.resolve("broadcast"));
           spew("What am I doing here?");
           return;
         }
 
+        spew("Dest & SysID & Resolver: %d , %d, %d", pc->getDestination(), getSystemId(), m_ctx.resolver.resolve("broadcast"));
         m_reply.setDestination(pc->getSource());
         m_reply.setDestinationEntity(pc->getSourceEntity());
         m_reply.request_id = pc->request_id;
         m_reply.op = pc->op;
         m_reply.plan_id = pc->plan_id;
 
-        spew("PC Values in the middle of Process Request. Type - %d, Operation - %d, Req ID - %d, Flags - %d, ExtraInfo - %s", pc->type, pc->op, pc->request_id, pc->flags, pc->info);
+        spew("PC Values in the middle of Process Request. Type - %d, Operation - %d, Req ID - %d, Flags - %d, ExtraInfo - %s", pc->type, pc->op, pc->request_id, pc->flags, pc->info.c_str());
 
         inf(DTR("request -- %s (%s)"),
             DTR(c_op_desc[m_reply.op]),
