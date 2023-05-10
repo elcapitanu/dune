@@ -202,7 +202,7 @@ namespace MiniASV
             //! Create Goto command in database
             IMC::PlanGeneration m_gen;
 
-            // inf("Goto ID %d", IMC::Goto::getIdStatic());
+            inf("Goto ID %d", IMC::Goto::getIdStatic());
             m_gen.op = IMC::PlanGeneration::OP_REQUEST;
             m_gen.plan_id = "go"; // Goto ID
             m_gen.params = "loc=;lat=" + std::to_string(maneuver.lat) + ";lon=" + std::to_string(maneuver.lon) + ";depth=0";
@@ -216,20 +216,24 @@ namespace MiniASV
 
             // plan_db.type = IMC::PlanDB::DBT_REQUEST;
             // plan_db.op = IMC::PlanDB::DBOP_SET;
-            // plan_db.plan_id = "go";
+            // plan_db.plan_id = "mission1";
+            // dispatch(plan_db);
             // plan_db.arg.set(m_gen);
             // plan_db.setDestination(m_gen.getSource());
             // plan_db.setDestinationEntity(m_gen.getSourceEntity());
-            // dispatch(*plan_db);
 
             // IMC::PlanControl *p_control = new IMC::PlanControl();
 
-            // const IMC::PlanSpecification *ps = 0;
+            const IMC::PlanSpecification *ps = 0;
 
-            // if (!m_pdb.arg.get(ps))
-            // {
-            //   inf("no plan specification given");
-            // }
+            if (!plan_db.arg.get(ps))
+            {
+              inf("no plan specification given");
+            }
+
+            // inf("ps_id: %s", ps->plan_id.c_str());
+
+            inf("ps_id is dying lol");
 
             // if (ps->plan_id != m_gen.plan_id)
             // {
@@ -243,7 +247,7 @@ namespace MiniASV
             // p_control->setDestination(ps->getSource());
             // p_control->setDestinationEntity(ps->getSourceEntity());
             // p_control->plan_id = ps->plan_id;
-            // p_control->arg.set(*ps);
+            // // p_control->arg.set(*ps);
             // p_control->info = "Will this finally work?"; // Useless ahah
             // dispatch(*p_control);
 

@@ -268,6 +268,7 @@ namespace Plan
 
         try
         {
+          inf("DB REQ OP: %d", req->op);
           // Handle requested operation
           switch (req->op)
           {
@@ -562,7 +563,7 @@ namespace Plan
       {
         m_reply.type = type;
         m_reply.info = desc;
-        dispatch(m_reply);
+        (m_reply);
 
         switch (m_reply.op)
         {
