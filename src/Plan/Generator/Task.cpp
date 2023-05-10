@@ -476,6 +476,7 @@ namespace Plan
 
             delete at_surface;
 
+            inf("Plan id before sequential plan: %s", plan_id.c_str());
             sequentialPlan(plan_id, &maneuvers, result);
 
             return true;
