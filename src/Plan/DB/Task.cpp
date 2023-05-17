@@ -253,7 +253,7 @@ namespace Plan
         }
 
         // Setup fields to echo in reply message
-        inf("DB: source: %d || entity: %d || op: %d || request id: %d || pla_id: %s", req->getSource(), req->getSourceEntity(), req->op, req->request_id, req->plan_id.c_str());
+        // inf("DB: source: %d || entity: %d || op: %d || request id: %d || pla_id: %s", req->getSource(), req->getSourceEntity(), req->op, req->request_id, req->plan_id.c_str());
         m_reply.setDestination(req->getSource());
         m_reply.setDestinationEntity(req->getSourceEntity());
         m_reply.op = req->op;
@@ -268,7 +268,7 @@ namespace Plan
 
         try
         {
-          inf("DB REQ OP: %d", req->op);
+          // inf("DB REQ OP: %d", req->op);
           // Handle requested operation
           switch (req->op)
           {

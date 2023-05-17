@@ -46,11 +46,6 @@ namespace MiniASV
 
     struct Task : public DUNE::Tasks::Task
     {
-
-      IMC::EstimatedState m_st;
-
-      IMC::PlanDB m_pdb;
-
       //! Timer
       Counter<double> m_wdog;
       //! IMC msg
@@ -68,9 +63,6 @@ namespace MiniASV
       //! @param[in] ctx context.
       Task(const std::string &name, Tasks::Context &ctx) : DUNE::Tasks::Task(name, ctx)
       {
-        std::cout << "Help 6" << std::endl;
-        bind<IMC::PlanDB>(this);
-        std::cout << "Help 7" << std::endl;
       }
 
       //! Update internal state with new parameter values.
@@ -128,44 +120,15 @@ namespace MiniASV
         dispatch(m_pwmL, DF_KEEP_TIME);
       }
 
-      void
-      consume(const IMC::PlanDB *pdb)
-      {
-        // std::cout << "Help 4" << std::endl;
-        // m_pdb.op = pdb->op;
-        // std::cout << "Help 10" << std::endl;
-        // m_pdb.type = pdb->type;
-        // std::cout << "Help 11" << std::endl;
-        // m_pdb.plan_id = pdb->plan_id;
-
-        // const IMC::PlanSpecification *ps = 0;
-
-        // if (!pdb->arg.get(*ps))
-        // {
-        //   inf("no plan specification given");
-        // }
-        // std::cout << "Help 12" << std::endl;
-        // std::printf("ps_id: %s", ps->plan_id.c_str());
-        // // std::cout << "Help 13" << std::endl;
-        // // m_pdb.arg.set(*ps);
-        // // std::cout << "Help 14" << std::endl;
-        // m_pdb.request_id = pdb->request_id;
-        // std::cout << "Help 15" << std::endl;
-        // std::cout << "Help 9" << std::endl;
-      }
-
       //! Main loop.
       void onMain(void)
       {
-        std::cout << "Help 1" << std::endl;
         while (!stopping())
         {
           waitForMessages(1.0);
 
           std::string input;
-          std::cout << "Help 2" << std::endl;
           std::cin >> input;
-          std::cout << "Help 3" << std::endl;
           switch (input[0])
           {
           //! For motor commands
@@ -197,66 +160,32 @@ namespace MiniASV
             // maneuver.lon = DUNE::Math::Angles::radians(maneuver.lon);
             // maneuver.lat = DUNE::Math::Angles::radians(maneuver.lat);
 
-            // spew("PC Values. Type - %d, Operation - %d, Req ID - %d, Flags - %d, ExtraInfo - %s", m_pc.type, m_pc.op, m_pc.request_id, m_pc.flags, m_pc.info.c_str());
-
             //! Create Goto command in database
-            IMC::PlanGeneration m_gen;
+            // IMC::PlanGeneration m_gen;
 
-            inf("Goto ID %d", IMC::Goto::getIdStatic());
-            m_gen.op = IMC::PlanGeneration::OP_REQUEST;
-            m_gen.plan_id = "go"; // Goto ID
-            m_gen.params = "loc=;lat=" + std::to_string(maneuver.lat) + ";lon=" + std::to_string(maneuver.lon) + ";depth=0";
-            m_gen.cmd = IMC::PlanGeneration::CMD_GENERATE;
-            dispatch(m_gen);
+            // // inf("Goto ID %d", IMC::Goto::getIdStatic());
+            // // m_gen.op = IMC::PlanGeneration::OP_REQUEST;
+            // // m_gen.plan_id = "go"; // Goto ID
+            // // m_gen.params = "loc=;lat=" + std::to_string(maneuver.lat) + ";lon=" + std::to_string(maneuver.lon) + ";depth=0";
+            // // m_gen.cmd = IMC::PlanGeneration::CMD_GENERATE;
+            // // dispatch(m_gen);
 
-            m_gen.cmd = IMC::PlanGeneration::CMD_EXECUTE;
-            dispatch(m_gen);
-
-            // IMC::PlanDB plan_db;
-
-            // plan_db.type = IMC::PlanDB::DBT_REQUEST;
-            // plan_db.op = IMC::PlanDB::DBOP_SET;
-            // plan_db.plan_id = "mission1";
-            // dispatch(plan_db);
-            // plan_db.arg.set(m_gen);
-            // plan_db.setDestination(m_gen.getSource());
-            // plan_db.setDestinationEntity(m_gen.getSourceEntity());
+            // // m_gen.cmd = IMC::PlanGeneration::CMD_EXECUTE;
+            // // dispatch(m_gen);
 
             // IMC::PlanControl *p_control = new IMC::PlanControl();
-
-            const IMC::PlanSpecification *ps = 0;
-
-            if (!plan_db.arg.get(ps))
-            {
-              inf("no plan specification given");
-            }
-
-            // inf("ps_id: %s", ps->plan_id.c_str());
-
-            inf("ps_id is dying lol");
-
-            // if (ps->plan_id != m_gen.plan_id)
-            // {
-            //   inf("plan id mismatch, ps_id: %s", ps->plan_id.c_str());
-            // }
+            // IMC::PlanSpecification *ps = new IMC::PlanSpecification();
 
             // p_control->type = IMC::PlanControl::PC_REQUEST;
             // p_control->op = IMC::PlanControl::PC_START;
+            // p_control->request_id = 151;
             // p_control->flags = IMC::PlanControl::FLG_CALIBRATE;
-            // p_control->request_id = m_pdb.request_id;
-            // p_control->setDestination(ps->getSource());
-            // p_control->setDestinationEntity(ps->getSourceEntity());
-            // p_control->plan_id = ps->plan_id;
+            // p_control->setDestination(p_control->getSource());
+            // p_control->setDestinationEntity(p_control->getSourceEntity());
+            // p_control->plan_id = "rows_coverage_caravela";
             // // p_control->arg.set(*ps);
-            // p_control->info = "Will this finally work?"; // Useless ahah
+            // // p_control->info = "Will this finally work?"; // Useless ahah
             // dispatch(*p_control);
-
-            // std::cout << std::fixed;
-            // std::cout << std::setprecision(30);
-            // std::cout << "(Lat,Lon) = " << maneuver.lat << maneuver.lon << std::endl;
-
-            // maneuver.z = 0;
-            // dispatch(maneuver);
 
             break;
           }

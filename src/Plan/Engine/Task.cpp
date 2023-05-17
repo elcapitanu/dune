@@ -601,7 +601,6 @@ namespace Plan
           return;
         }
 
-        spew("Dest & SysID & Resolver: %d , %d, %d", pc->getDestination(), getSystemId(), m_ctx.resolver.resolve("broadcast"));
         m_reply.setDestination(pc->getSource());
         m_reply.setDestinationEntity(pc->getSourceEntity());
         m_reply.request_id = pc->request_id;
