@@ -68,12 +68,12 @@ namespace Simulators
     };
 
     //! Simulator task.
-    struct Task: public Tasks::Periodic
+    struct Task : public Tasks::Periodic
     {
       //! Simulation vehicle.
-      Simulators::VSIM::Vehicle* m_vehicle;
+      Simulators::VSIM::Vehicle *m_vehicle;
       //! Simulation world.
-      Simulators::VSIM::World* m_world;
+      Simulators::VSIM::World *m_world;
       //! Simulated position (X,Y,Z).
       IMC::SimulatedState m_sstate;
       //! Task arguments.
@@ -81,14 +81,15 @@ namespace Simulators
       //! Stream velocity.
       double m_svel[3];
 
-      Task(const std::string& name, Tasks::Context& ctx):
-        Periodic(name, ctx),
-        m_vehicle(NULL),
-        m_world(NULL)
+      float yaw, pitch, roll;
+
+      Task(const std::string &name, Tasks::Context &ctx) : Periodic(name, ctx),
+                                                           m_vehicle(NULL),
+                                                           m_world(NULL)
       {
         param("Time Multiplier", m_args.time_multiplier)
-        .defaultValue("1.0")
-        .description("Simulation time multiplier");
+            .defaultValue("1.0")
+            .description("Simulation time multiplier");
 
         param("Entity Label - Stream Velocity Source", m_args.svlabel)
             .defaultValue("Stream Velocity Simulator")
@@ -99,6 +100,7 @@ namespace Simulators
         bind<IMC::ServoPosition>(this);
         bind<IMC::SetThrusterActuation>(this);
         bind<IMC::EstimatedStreamVelocity>(this);
+        bind<IMC::EulerAngles>(this);
       }
 
       void
@@ -143,7 +145,7 @@ namespace Simulators
       }
 
       void
-      consume(const IMC::GpsFix* msg)
+      consume(const IMC::GpsFix *msg)
       {
         if (msg->type != IMC::GpsFix::GFT_MANUAL_INPUT)
           return;
@@ -167,20 +169,20 @@ namespace Simulators
       }
 
       void
-      consume(const IMC::ServoPosition* msg)
+      consume(const IMC::ServoPosition *msg)
       {
-        UUV* v = static_cast<UUV*>(m_vehicle);
+        UUV *v = static_cast<UUV *>(m_vehicle);
         v->updateFin(msg->id, msg->value);
       }
 
       void
-      consume(const IMC::SetThrusterActuation* msg)
+      consume(const IMC::SetThrusterActuation *msg)
       {
         m_vehicle->updateEngine(msg->id, msg->value);
       }
 
       void
-      consume(const IMC::EstimatedStreamVelocity* msg)
+      consume(const IMC::EstimatedStreamVelocity *msg)
       {
         // Filter valid messages.
         if (msg->getSource() != getSystemId() ||
@@ -198,6 +200,14 @@ namespace Simulators
       }
 
       void
+      consume(const IMC::EulerAngles *msg)
+      {
+        roll = msg->phi;
+        pitch = msg->theta;
+        yaw = msg->psi;
+      }
+
+      void
       task(void)
       {
         if (!isActive())
@@ -206,7 +216,7 @@ namespace Simulators
         m_world->takeStep();
 
         // Fill position.
-        double* position = m_vehicle->getPosition();
+        double *position = m_vehicle->getPosition();
 
         // TODO
         // This is a temporary fix and this operation should probably be done
@@ -221,19 +231,23 @@ namespace Simulators
         m_sstate.z = std::max(position[2], 0.0);
 
         // Fill attitude.
-        double* attitude = m_vehicle->getOrientation();
+        /* double *attitude = m_vehicle->getOrientation();
         m_sstate.phi = Angles::normalizeRadian(attitude[0]);
         m_sstate.theta = Angles::normalizeRadian(attitude[1]);
         m_sstate.psi = Angles::normalizeRadian(attitude[2]);
+ */
+        m_sstate.phi = Angles::normalizeRadian(roll);
+        m_sstate.theta = Angles::normalizeRadian(pitch);
+        m_sstate.psi = Angles::normalizeRadian(yaw);
 
         // Fill angular velocity.
-        double* av = m_vehicle->getAngularVelocity();
+        double *av = m_vehicle->getAngularVelocity();
         m_sstate.p = av[0];
         m_sstate.q = av[1];
         m_sstate.r = av[2];
 
         // Fill linear velocity.
-        double* lv = m_vehicle->getLinearVelocity();
+        double *lv = m_vehicle->getLinearVelocity();
         m_sstate.u = lv[0];
         m_sstate.v = lv[1];
         m_sstate.w = lv[2];
