@@ -213,8 +213,8 @@ namespace MiniASV
         m_eulerAngles.setTimeStamp(m_tstamp);
         m_eulerAngles.phi = 0;
         m_eulerAngles.theta = 0;
-        m_eulerAngles.psi = (m_driver->m_miniASVData.yaw+180)/Math::c_degrees_per_radian;
-        m_eulerAngles.psi_magnetic = (m_driver->m_miniASVData.yaw+180)/Math::c_degrees_per_radian;
+        m_eulerAngles.psi = (m_driver->m_miniASVData.yaw)/Math::c_degrees_per_radian;
+        m_eulerAngles.psi_magnetic = (m_driver->m_miniASVData.yaw)/Math::c_degrees_per_radian;
         dispatch(m_eulerAngles, DF_KEEP_TIME);
       }
 
