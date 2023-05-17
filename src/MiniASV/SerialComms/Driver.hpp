@@ -18,7 +18,13 @@ namespace MiniASV
         int pwmR = 0;
         int pwmL = 0;
 
-        // bool state_new_data[1];
+        float accelX, accelY, accelZ;
+        float gyroX, gyroY, gyroZ;
+        float magX, magY, magZ;
+        float yaw, pitch, roll;
+        float temp;
+
+        bool state_new_data[5];
       };
 
       SerialPort *m_uart;
@@ -37,35 +43,26 @@ namespace MiniASV
       void
       resetStateNewData(void)
       {
-        /* for (uint8_t t = 0; t < 1; t++)
-          m_miniASVData.state_new_data[t] = false; */
+        for (uint8_t t = 0; t < 5; t++)
+          m_miniASVData.state_new_data[t] = false;
       }
 
       bool
       getVersionFirmware()
       {
-        if (sendCommand("@VERS,*", "$VERS,"))
-          return true;
-
-        return false;
+        return sendCommand("@VERS,*", "$VERS,");
       }
 
       bool
       startAcquisition()
       {
-        if (sendCommand("@START,*", "$RSP,ACK,*"))
-          return true;
-
-        return false;
+        return sendCommand("@START,*", "$RSP,ACK,*");
       }
 
       bool
       stopAcquisition()
       {
-        if (sendCommand("@STOP,*", "$STOP,*"))
-          return true;
-
-        return false;
+        return sendCommand("@STOP,*", "$STOP,*");
       }
 
       bool
@@ -82,10 +79,76 @@ namespace MiniASV
         bfr[strlen(bfr) - 3] = '\0';
 
         char *param = std::strtok(bfr, ",");
+        if (std::strcmp(param, "$TEMP") == 0)
+        {
+          param = std::strtok(NULL, ",");
+          m_miniASVData.temp = atof(param);
+          // m_task->debug("Temp: %f ºC", m_miniASVData.temp);
+          // m_miniASVData.state_new_data[0] = true;
 
-        bool result = true;
+          return true;
+        }
+        else if (std::strcmp(param, "$ACCEL") == 0)
+        {
+          param = std::strtok(NULL, ",");
+          m_miniASVData.accelX = atof(param);
+          param = std::strtok(NULL, ",");
+          m_miniASVData.accelY = atof(param);
+          param = std::strtok(NULL, ",");
+          m_miniASVData.accelZ = atof(param);
+          // m_task->debug("Accel: %f|%f|%f", m_miniASVData.accelX, m_miniASVData.accelY, m_miniASVData.accelZ);
+          // m_miniASVData.state_new_data[1] = true;
 
-        return result;
+          return true;
+        }
+        else if (std::strcmp(param, "$GYRO") == 0)
+        {
+          param = std::strtok(NULL, ",");
+          m_miniASVData.gyroX = atof(param);
+          param = std::strtok(NULL, ",");
+          m_miniASVData.gyroY = atof(param);
+          param = std::strtok(NULL, ",");
+          m_miniASVData.gyroZ = atof(param);
+          // m_task->debug("Gyro: %f|%f|%f", m_miniASVData.gyroX, m_miniASVData.gyroY, m_miniASVData.gyroZ);
+          // m_miniASVData.state_new_data[2] = true;
+
+          return true;
+        }
+        else if (std::strcmp(param, "$MAG") == 0)
+        {
+          param = std::strtok(NULL, ",");
+          m_miniASVData.magX = atof(param);
+          param = std::strtok(NULL, ",");
+          m_miniASVData.magY = atof(param);
+          param = std::strtok(NULL, ",");
+          m_miniASVData.magZ = atof(param);
+          // m_task->debug("Mag: %f|%f|%f", m_miniASVData.magX, m_miniASVData.magY, m_miniASVData.magZ);
+          // m_miniASVData.state_new_data[3] = true;
+
+          return true;
+        }
+        else if (std::strcmp(param, "$YPR") == 0)
+        {
+          param = std::strtok(NULL, ",");
+          m_miniASVData.yaw = atof(param);
+          param = std::strtok(NULL, ",");
+          m_miniASVData.pitch = atof(param);
+          param = std::strtok(NULL, ",");
+          m_miniASVData.roll = atof(param);
+          m_task->debug("YPR: %f|%f|%f", m_miniASVData.yaw, m_miniASVData.pitch, m_miniASVData.roll);
+          // m_miniASVData.state_new_data[4] = true;
+
+          return true;
+        }
+
+        /* bool result = true;
+        for (uint8_t t = 0; t < 5; t++)
+        {
+          if (m_miniASVData.state_new_data[t] == false)
+            result = false;
+        } */
+
+        return false;
       }
 
       void
@@ -94,7 +157,7 @@ namespace MiniASV
         char cmdText[32];
         std::sprintf(cmdText, "%s%c\n", cmd, (Algorithms::XORChecksum::compute((uint8_t *)cmd, strlen(cmd) - 1) | 0x80));
         // std::sprintf(cmdText, "%s\n", cmd);
-        m_task->inf("Command (no rsp): %s", cmdText);
+        // m_task->inf("Command (no rsp): %s", cmdText);
         m_uart->writeString(cmdText);
       }
 
@@ -109,7 +172,6 @@ namespace MiniASV
         std::sprintf(cmdReplyText, "%s\n", reply); */
         char bfrUart[128];
         m_task->inf("Command: %s", cmdText);
-
         m_uart->writeString(cmdText);
 
         if (Poll::poll(*m_uart, m_timeout_uart))
