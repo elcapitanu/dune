@@ -53,13 +53,13 @@ namespace Plan
     //! Timeout for the vehicle state
     const double c_vs_timeout = 2.5;
     //! Plan Command operation descriptions
-    const char* c_op_desc[] = {DTR_RT("Start Plan"), DTR_RT("Stop Plan"),
+    const char *c_op_desc[] = {DTR_RT("Start Plan"), DTR_RT("Stop Plan"),
                                DTR_RT("Load Plan"), DTR_RT("Get Plan")};
     //! Plan state descriptions
-    const char* c_state_desc[] = {DTR_RT("BLOCKED"), DTR_RT("READY"),
+    const char *c_state_desc[] = {DTR_RT("BLOCKED"), DTR_RT("READY"),
                                   DTR_RT("INITIALIZING"), DTR_RT("EXECUTING")};
     //! DataBase statement
-    static const char* c_get_plan_stmt = "select data from Plan where plan_id=?";
+    static const char *c_get_plan_stmt = "select data from Plan where plan_id=?";
 
     struct Arguments
     {
@@ -91,10 +91,10 @@ namespace Plan
       float max_depth;
     };
 
-    struct Task: public DUNE::Tasks::Task
+    struct Task : public DUNE::Tasks::Task
     {
       //! Pointer to Plan class
-      Plan* m_plan;
+      Plan *m_plan;
       //! Plan control interface
       IMC::PlanControlState m_pcs;
       IMC::PlanControl m_reply;
@@ -131,58 +131,57 @@ namespace Plan
       //! Task arguments.
       Arguments m_args;
 
-      Task(const std::string& name, Tasks::Context& ctx):
-        DUNE::Tasks::Task(name, ctx),
-        m_plan(NULL),
-        m_imu_enabled(false)
+      Task(const std::string &name, Tasks::Context &ctx) : DUNE::Tasks::Task(name, ctx),
+                                                           m_plan(NULL),
+                                                           m_imu_enabled(false)
       {
         param("Compute Progress", m_args.progress)
-        .defaultValue("false")
-        .description("True if plan progress should be computed");
+            .defaultValue("false")
+            .description("True if plan progress should be computed");
 
         param("Fuel Prediction", m_args.fpredict)
-        .defaultValue("true")
-        .description("True if plan's fuel prediction should be computed");
+            .defaultValue("true")
+            .description("True if plan's fuel prediction should be computed");
 
         param("State Report Frequency", m_args.speriod)
-        .defaultValue("3.0")
-        .units(Units::Hertz)
-        .description("Frequency of plan control state");
+            .defaultValue("3.0")
+            .units(Units::Hertz)
+            .description("Frequency of plan control state");
 
         param("Minimum Calibration Time", m_args.calibration_time)
-        .defaultValue("10")
-        .units(Units::Second)
-        .description("Duration of vehicle calibration commands");
+            .defaultValue("10")
+            .units(Units::Second)
+            .description("Duration of vehicle calibration commands");
 
         param("Perform Calibration", m_args.do_calib)
-        .defaultValue("true")
-        .description("True if calibration should be performed at all");
+            .defaultValue("true")
+            .description("True if calibration should be performed at all");
 
         param("Abort On Failed Activation", m_args.actfail_abort)
-        .defaultValue("false")
-        .description("Abort when a payload fails to activate");
+            .defaultValue("false")
+            .description("Abort when a payload fails to activate");
 
         param("StationKeeping While Calibrating", m_args.sk_calib)
-        .defaultValue("false")
-        .description("Perform station keeping while calibrating");
+            .defaultValue("false")
+            .description("Perform station keeping while calibrating");
 
         param("StationKeeping Speed in RPM", m_args.sk_rpm)
-        .defaultValue("1600")
-        .units(Units::RPM)
-        .description("Speed in RPM for the station keeping");
+            .defaultValue("1600")
+            .units(Units::RPM)
+            .description("Speed in RPM for the station keeping");
 
         param("StationKeeping Radius", m_args.sk_radius)
-        .defaultValue("20")
-        .units(Units::Meter)
-        .description("Radius for the station keeping");
+            .defaultValue("20")
+            .units(Units::Meter)
+            .description("Radius for the station keeping");
 
         param("IMU Entity Label", m_args.label_imu)
-        .defaultValue("IMU")
-        .description("Entity label of the IMU for fuel prediction");
+            .defaultValue("IMU")
+            .description("Entity label of the IMU for fuel prediction");
 
         param("Plan Generator Entity Label", m_args.label_gen)
-        .defaultValue("Plan Generator")
-        .description("Entity label of the Plan Generator");
+            .defaultValue("Plan Generator")
+            .description("Entity label of the Plan Generator");
 
         m_ctx.config.get("General", "Recovery Plan", "dislodge", m_args.recovery_plan);
         m_ctx.config.get("General", "Absolute Maximum Depth", "50.0", m_args.max_depth);
@@ -254,9 +253,11 @@ namespace Plan
         m_report_timer.setTop(m_args.speriod);
       }
 
+      // Entra aqui bueda vezes
       void
-      consume(const IMC::EstimatedState* msg)
+      consume(const IMC::EstimatedState *msg)
       {
+        // spew("BIc is black, and many other colors");
         if (msg->getSource() != getSystemId())
           return;
 
@@ -264,8 +265,9 @@ namespace Plan
       }
 
       void
-      consume(const IMC::ManeuverControlState* msg)
+      consume(const IMC::ManeuverControlState *msg)
       {
+        // spew("Que linda mensagem, vai ser bem controlado");
         m_mcs = *msg;
 
         if (msg->state == IMC::ManeuverControlState::MCS_DONE)
@@ -273,20 +275,23 @@ namespace Plan
       }
 
       void
-      consume(const IMC::RegisterManeuver* msg)
+      consume(const IMC::RegisterManeuver *msg)
       {
+        spew("resgistei a tua mao");
         m_supported_maneuvers.insert(msg->mid);
       }
 
       void
-      consume(const IMC::EntityInfo* msg)
+      consume(const IMC::EntityInfo *msg)
       {
+        // spew("apazing entity info");
         m_cinfo.insert(std::pair<std::string, IMC::EntityInfo>(msg->label, *msg));
       }
 
       void
-      consume(const IMC::EntityActivationState* msg)
+      consume(const IMC::EntityActivationState *msg)
       {
+        spew("activa state in ON");
         // not local message.
         if (msg->getSource() != getSystemId())
           return;
@@ -339,7 +344,7 @@ namespace Plan
       }
 
       void
-      consume(const IMC::FuelLevel* msg)
+      consume(const IMC::FuelLevel *msg)
       {
         if (m_plan == NULL)
           return;
@@ -348,8 +353,9 @@ namespace Plan
       }
 
       void
-      consume(const IMC::VehicleCommand* vc)
+      consume(const IMC::VehicleCommand *vc)
       {
+        spew("Hey bro I am hereeeee");
         if (vc->type == IMC::VehicleCommand::VC_REQUEST)
           return;
 
@@ -380,8 +386,10 @@ namespace Plan
       }
 
       void
-      consume(const IMC::VehicleState* vs)
+      consume(const IMC::VehicleState *vs)
       {
+        // spew("Hola hermano we are checking vehicle state");
+
         if (getEntityState() == IMC::EntityState::ESTA_BOOT)
           return;
 
@@ -389,22 +397,23 @@ namespace Plan
 
         switch (vs->op_mode)
         {
-          case IMC::VehicleState::VS_SERVICE:
-            onVehicleService(vs);
-            break;
-          case IMC::VehicleState::VS_CALIBRATION:
-            onVehicleCalibration(vs);
-            break;
-          case IMC::VehicleState::VS_ERROR:
-          case IMC::VehicleState::VS_BOOT:
-            onVehicleError(vs);
-            break;
-          case IMC::VehicleState::VS_MANEUVER:
-            onVehicleManeuver(vs);
-            break;
-          case IMC::VehicleState::VS_EXTERNAL:
-            onVehicleExternalControl(vs);
-            break;
+        case IMC::VehicleState::VS_SERVICE:
+          onVehicleService(vs);
+          break;
+        case IMC::VehicleState::VS_CALIBRATION:
+          onVehicleCalibration(vs);
+          break;
+        case IMC::VehicleState::VS_ERROR:
+        case IMC::VehicleState::VS_BOOT:
+          onVehicleError(vs);
+          break;
+        case IMC::VehicleState::VS_MANEUVER:
+          // spew("Hermano manobrando essa hermosa");
+          onVehicleManeuver(vs);
+          break;
+        case IMC::VehicleState::VS_EXTERNAL:
+          onVehicleExternalControl(vs);
+          break;
         }
 
         // update calibration status
@@ -417,7 +426,7 @@ namespace Plan
             if ((vs->op_mode == IMC::VehicleState::VS_CALIBRATION) &&
                 !pendingReply())
             {
-              IMC::PlanManeuver* pman = m_plan->loadStartManeuver();
+              IMC::PlanManeuver *pman = m_plan->loadStartManeuver();
               startManeuver(pman);
             }
           }
@@ -431,36 +440,36 @@ namespace Plan
       }
 
       void
-      onVehicleService(const IMC::VehicleState* vs)
+      onVehicleService(const IMC::VehicleState *vs)
       {
         switch (m_pcs.state)
         {
-          case IMC::PlanControlState::PCS_BLOCKED:
-            changeMode(IMC::PlanControlState::PCS_READY, DTR("vehicle ready"), TYPE_INF);
-            break;
-          case IMC::PlanControlState::PCS_INITIALIZING:
-            if (!pendingReply())
-            {
-              m_plan->updateCalibration(vs);
-              IMC::PlanManeuver* pman = m_plan->loadStartManeuver();
-              startManeuver(pman);
-            }
-            break;
-          case IMC::PlanControlState::PCS_EXECUTING:
-            if (!pendingReply())
-            {
-              onFailure(vs->last_error, false);
-              m_reply.plan_id = m_spec.plan_id;
-              changeMode(IMC::PlanControlState::PCS_READY, vs->last_error);
-            }
-            break;
-          default:
-            break;
+        case IMC::PlanControlState::PCS_BLOCKED:
+          changeMode(IMC::PlanControlState::PCS_READY, DTR("vehicle ready"), TYPE_INF);
+          break;
+        case IMC::PlanControlState::PCS_INITIALIZING:
+          if (!pendingReply())
+          {
+            m_plan->updateCalibration(vs);
+            IMC::PlanManeuver *pman = m_plan->loadStartManeuver();
+            startManeuver(pman);
+          }
+          break;
+        case IMC::PlanControlState::PCS_EXECUTING:
+          if (!pendingReply())
+          {
+            onFailure(vs->last_error, false);
+            m_reply.plan_id = m_spec.plan_id;
+            changeMode(IMC::PlanControlState::PCS_READY, vs->last_error);
+          }
+          break;
+        default:
+          break;
         }
       }
 
       void
-      onVehicleManeuver(const IMC::VehicleState* vs)
+      onVehicleManeuver(const IMC::VehicleState *vs)
       {
         if (!execMode() || pendingReply())
           return;
@@ -479,7 +488,7 @@ namespace Plan
           }
           else
           {
-            IMC::PlanManeuver* pman = m_plan->loadNextManeuver();
+            IMC::PlanManeuver *pman = m_plan->loadNextManeuver();
             startManeuver(pman);
           }
         }
@@ -490,7 +499,7 @@ namespace Plan
       }
 
       void
-      onVehicleError(const IMC::VehicleState* vs)
+      onVehicleError(const IMC::VehicleState *vs)
       {
         std::string err_ents = DTR("vehicle errors: ") + vs->error_ents;
         std::string edesc = vs->last_error_time < 0 ? err_ents : vs->last_error;
@@ -517,7 +526,7 @@ namespace Plan
       }
 
       void
-      onVehicleCalibration(const IMC::VehicleState* vs)
+      onVehicleCalibration(const IMC::VehicleState *vs)
       {
         (void)vs;
 
@@ -532,7 +541,7 @@ namespace Plan
       }
 
       void
-      onVehicleExternalControl(const IMC::VehicleState* vs)
+      onVehicleExternalControl(const IMC::VehicleState *vs)
       {
         (void)vs;
 
@@ -544,8 +553,10 @@ namespace Plan
       }
 
       void
-      consume(const IMC::PlanControl* pc)
+      consume(const IMC::PlanControl *pc)
       {
+        spew("Hola inside plan control IMCCC");
+
         if (pc->type != IMC::PlanControl::PC_REQUEST)
           return;
 
@@ -561,6 +572,8 @@ namespace Plan
         {
           m_requests.push(*pc);
           debug("saved request %u", pc->request_id);
+          inf("saved request %u", pc->request_id);
+          spew("saved request %u", pc->request_id);
           return;
         }
         else if (m_requests.size())
@@ -576,17 +589,25 @@ namespace Plan
       }
 
       void
-      processRequest(const IMC::PlanControl* pc)
+      processRequest(const IMC::PlanControl *pc)
       {
-        if (pc->getDestination() != getSystemId()
-            && pc->getDestination() != m_ctx.resolver.resolve("broadcast"))
-        return;
+
+        spew("PC Values before Process Request. Type - %d, Operation - %d, Req ID - %d, Flags - %d, ExtraInfo - %s", pc->type, pc->op, pc->request_id, pc->flags, pc->info.c_str());
+
+        if (pc->getDestination() != getSystemId() && pc->getDestination() != m_ctx.resolver.resolve("broadcast"))
+        {
+          spew("ERROR, Dest & SysID & Resolver: %d , %d, %d", pc->getDestination(), getSystemId(), m_ctx.resolver.resolve("broadcast"));
+          spew("What am I doing here?");
+          return;
+        }
 
         m_reply.setDestination(pc->getSource());
         m_reply.setDestinationEntity(pc->getSourceEntity());
         m_reply.request_id = pc->request_id;
         m_reply.op = pc->op;
         m_reply.plan_id = pc->plan_id;
+
+        spew("PC Values in the middle of Process Request. Type - %d, Operation - %d, Req ID - %d, Flags - %d, ExtraInfo - %s", pc->type, pc->op, pc->request_id, pc->flags, pc->info.c_str());
 
         inf(DTR("request -- %s (%s)"),
             DTR(c_op_desc[m_reply.op]),
@@ -600,22 +621,22 @@ namespace Plan
 
         switch (pc->op)
         {
-          case IMC::PlanControl::PC_START:
-            if (!startPlan(pc->plan_id, pc->arg.isNull() ? 0 : pc->arg.get(), pc->flags))
-              vehicleRequest(IMC::VehicleCommand::VC_STOP_MANEUVER);
-            break;
-          case IMC::PlanControl::PC_STOP:
-            stopPlan();
-            break;
-          case IMC::PlanControl::PC_LOAD:
-            loadPlan(pc->plan_id, pc->arg.isNull() ? 0 : pc->arg.get(), false);
-            break;
-          case IMC::PlanControl::PC_GET:
-            getPlan();
-            break;
-          default:
-            onFailure(DTR("plan control operation not supported"));
-            break;
+        case IMC::PlanControl::PC_START:
+          if (!startPlan(pc->plan_id, pc->arg.isNull() ? 0 : pc->arg.get(), pc->flags))
+            vehicleRequest(IMC::VehicleCommand::VC_STOP_MANEUVER);
+          break;
+        case IMC::PlanControl::PC_STOP:
+          stopPlan();
+          break;
+        case IMC::PlanControl::PC_LOAD:
+          loadPlan(pc->plan_id, pc->arg.isNull() ? 0 : pc->arg.get(), false);
+          break;
+        case IMC::PlanControl::PC_GET:
+          getPlan();
+          break;
+        default:
+          onFailure(DTR("plan control operation not supported"));
+          break;
         }
       }
 
@@ -625,7 +646,7 @@ namespace Plan
       //! @param[in] plan_startup true if a plan will start right after
       //! @return true if plan is successfully loaded
       bool
-      loadPlan(const std::string& plan_id, const IMC::Message* arg,
+      loadPlan(const std::string &plan_id, const IMC::Message *arg,
                bool plan_startup = false)
       {
         if ((initMode() && !plan_startup) || execMode())
@@ -719,14 +740,14 @@ namespace Plan
       //! @param[out] ps reference to PlanStatistics message
       //! @return true if was able to parse the plan
       inline bool
-      parsePlan(bool plan_startup, IMC::PlanStatistics& ps)
+      parsePlan(bool plan_startup, IMC::PlanStatistics &ps)
       {
         try
         {
           m_plan->parse(&m_supported_maneuvers, m_cinfo,
                         ps, m_imu_enabled, &m_state);
         }
-        catch (Plan::ParseError& pe)
+        catch (Plan::ParseError &pe)
         {
           onFailure(pe.what());
           m_plan->clear();
@@ -745,7 +766,7 @@ namespace Plan
       //! @param[in] ps plan specification message
       //! @return true if plan is found
       bool
-      lookForPlan(const std::string& plan_id, IMC::PlanSpecification& ps)
+      lookForPlan(const std::string &plan_id, IMC::PlanSpecification &ps)
       {
         if (plan_id.empty())
         {
@@ -767,10 +788,9 @@ namespace Plan
 
           Database::Blob data;
           get_plan_stmt >> data;
-          ps.deserializeFields((const uint8_t*)&data[0], data.size());
-
+          ps.deserializeFields((const uint8_t *)&data[0], data.size());
         }
-        catch (std::runtime_error& e)
+        catch (std::runtime_error &e)
         {
           onFailure(String::str(DTR("failed loading from DB: %s"), e.what()));
           return false;
@@ -785,14 +805,14 @@ namespace Plan
       //! @param[out] info string with the error in case of failure
       //! @return false if unable to get the spec
       bool
-      parseArg(const std::string& plan_id, const IMC::Message* arg,
-               std::string& info)
+      parseArg(const std::string &plan_id, const IMC::Message *arg,
+               std::string &info)
       {
         if (arg)
         {
           if (arg->getId() == DUNE_IMC_PLANSPECIFICATION)
           {
-            const IMC::PlanSpecification* given_plan = static_cast<const IMC::PlanSpecification*>(arg);
+            const IMC::PlanSpecification *given_plan = static_cast<const IMC::PlanSpecification *>(arg);
 
             m_spec = *given_plan;
             m_spec.setSourceEntity(getEntityId());
@@ -801,7 +821,7 @@ namespace Plan
           {
             // Quick plan
             IMC::PlanManeuver spec_man;
-            const IMC::Maneuver* man = static_cast<const IMC::Maneuver*>(arg);
+            const IMC::Maneuver *man = static_cast<const IMC::Maneuver *>(arg);
 
             if (man)
             {
@@ -841,7 +861,7 @@ namespace Plan
       //! @param[in] flags plan control flags
       //! @return false if previously executing maneuver was not stopped
       bool
-      startPlan(const std::string& plan_id, const IMC::Message* spec, uint16_t flags)
+      startPlan(const std::string &plan_id, const IMC::Message *spec, uint16_t flags)
       {
         bool stopped = stopPlan(true);
 
@@ -872,7 +892,7 @@ namespace Plan
         }
         else
         {
-          IMC::PlanManeuver* pman = m_plan->loadStartManeuver();
+          IMC::PlanManeuver *pman = m_plan->loadStartManeuver();
           startManeuver(pman);
 
           if (execMode())
@@ -900,7 +920,7 @@ namespace Plan
           return false;
         }
 
-        IMC::Message* m = 0;
+        IMC::Message *m = 0;
 
         IMC::StationKeeping sk;
 
@@ -912,7 +932,7 @@ namespace Plan
           sk.radius = m_args.sk_radius;
           sk.speed_units = IMC::SUNITS_RPM;
           sk.speed = m_args.sk_rpm;
-          m = static_cast<IMC::Message*>(&sk);
+          m = static_cast<IMC::Message *>(&sk);
         }
 
         vehicleRequest(IMC::VehicleCommand::VC_START_CALIBRATION, m);
@@ -922,7 +942,7 @@ namespace Plan
       //! Start a maneuver by name
       //! @param[in] pman pointer to plan maneuver message
       void
-      startManeuver(IMC::PlanManeuver* pman)
+      startManeuver(IMC::PlanManeuver *pman)
       {
         if (pman == NULL)
         {
@@ -945,7 +965,7 @@ namespace Plan
       //! @param[in] desc description for the answer
       //! @param[in] print true if output should be printed out
       void
-      answer(uint8_t type, const std::string& desc, bool print = true)
+      answer(uint8_t type, const std::string &desc, bool print = true)
       {
         m_reply.type = type;
         m_reply.info = desc;
@@ -969,7 +989,7 @@ namespace Plan
       //! @param[in] errmsg text error message to send
       //! @param[in] print true if the message should be printed to output
       void
-      onFailure(const std::string& errmsg, bool print = true)
+      onFailure(const std::string &errmsg, bool print = true)
       {
         m_pcs.last_outcome = IMC::PlanControlState::LPO_FAILURE;
         m_pcs.plan_progress = -1.0;
@@ -982,7 +1002,7 @@ namespace Plan
       //! @param[in] msg text message to send
       //! @param[in] print true if the message should be printed to output
       void
-      onSuccess(const std::string& msg = DTR("OK"), bool print = true)
+      onSuccess(const std::string &msg = DTR("OK"), bool print = true)
       {
         m_pcs.plan_progress = -1.0;
         m_pcs.plan_eta = 0;
@@ -997,8 +1017,8 @@ namespace Plan
       //! @param[in] maneuver pointer to maneuver message
       //! @param[in] print true if the messages should be printed to output
       void
-      changeMode(IMC::PlanControlState::StateEnum s, const std::string& event_desc,
-                 const std::string& nid, const IMC::Message* maneuver, OutputType print = TYPE_WAR)
+      changeMode(IMC::PlanControlState::StateEnum s, const std::string &event_desc,
+                 const std::string &nid, const IMC::Message *maneuver, OutputType print = TYPE_WAR)
       {
         double now = Clock::getSinceEpoch();
 
@@ -1046,7 +1066,7 @@ namespace Plan
       //! @param[in] event_desc description of the event that motivated the change
       //! @param[in] print true if the messages should be printed to output
       void
-      changeMode(IMC::PlanControlState::StateEnum s, const std::string& event_desc,
+      changeMode(IMC::PlanControlState::StateEnum s, const std::string &event_desc,
                  OutputType print = TYPE_WAR)
       {
         changeMode(s, event_desc, "", NULL, print);
@@ -1141,14 +1161,14 @@ namespace Plan
 
       void
       vehicleRequest(IMC::VehicleCommand::CommandEnum command,
-                     const IMC::Message* arg = 0)
+                     const IMC::Message *arg = 0)
       {
         m_vc.type = IMC::VehicleCommand::VC_REQUEST;
         m_vc.request_id = ++m_vreq_ctr;
         m_vc.command = command;
 
         if (arg)
-          m_vc.maneuver.set(*static_cast<const IMC::Maneuver*>(arg));
+          m_vc.maneuver.set(*static_cast<const IMC::Maneuver *>(arg));
 
         if (command == IMC::VehicleCommand::VC_START_CALIBRATION)
         {
@@ -1198,7 +1218,7 @@ namespace Plan
       }
 
       void
-      changeLog(const std::string& name)
+      changeLog(const std::string &name)
       {
         m_lc.op = IMC::LoggingControl::COP_REQUEST_START;
         m_lc.name = name;

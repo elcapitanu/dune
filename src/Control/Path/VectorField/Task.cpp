@@ -58,7 +58,7 @@ namespace Control
         double ext_trgain;
       };
 
-      struct Task: public DUNE::Control::PathController
+      struct Task : public DUNE::Control::PathController
       {
         //! Controller gain.
         double m_gain;
@@ -67,34 +67,33 @@ namespace Control
         //! Task arguments.
         Arguments m_args;
 
-        Task(const std::string& name, Tasks::Context& ctx):
-          DUNE::Control::PathController(name, ctx)
+        Task(const std::string &name, Tasks::Context &ctx) : DUNE::Control::PathController(name, ctx)
         {
           param("Corridor -- Width", m_args.corridor)
-          .minimumValue("1.0")
-          .maximumValue("50.0")
-          .defaultValue("5.0")
-          .units(Units::Meter)
-          .description("Width of corridor for attack entry angle");
+              .minimumValue("1.0")
+              .maximumValue("50.0")
+              .defaultValue("5.0")
+              .units(Units::Meter)
+              .description("Width of corridor for attack entry angle");
 
           param("Corridor -- Entry Angle", m_args.entry_angle)
-          .minimumValue("2")
-          .maximumValue("45")
-          .defaultValue("15")
-          .units(Units::Degree)
-          .description("Attack angle when lateral track error equals corridor width");
+              .minimumValue("2")
+              .maximumValue("45")
+              .defaultValue("15")
+              .units(Units::Degree)
+              .description("Attack angle when lateral track error equals corridor width");
 
           param("Extended Control -- Enabled", m_args.ext_control)
-          .defaultValue("false")
-          .description("Enable extended (refined) corridor control");
+              .defaultValue("false")
+              .description("Enable extended (refined) corridor control");
 
           param("Extended Control -- Controller Gain", m_args.ext_gain)
-          .defaultValue("1.0")
-          .description("Gain for extended control");
+              .defaultValue("1.0")
+              .description("Gain for extended control");
 
           param("Extended Control -- Turn Rate Gain", m_args.ext_trgain)
-          .defaultValue("1.0")
-          .description("Turn rate gain for extended control");
+              .defaultValue("1.0")
+              .description("Turn rate gain for extended control");
         }
 
         void
@@ -124,7 +123,7 @@ namespace Control
         //! Execute a path control step
         //! From base class PathController
         void
-        step(const IMC::EstimatedState& state, const TrackingState& ts)
+        step(const IMC::EstimatedState &state, const TrackingState &ts)
         {
           // Note:
           // cross-track position (lateral error) = ts.track_pos.y
@@ -147,11 +146,7 @@ namespace Control
           else if (akcorr > 0.05)
           {
             // Inside corridor
-            ref = ts.track_bearing
-            - std::pow(kcorr, m_args.ext_gain) * m_args.entry_angle
-            * (1 +
-               (m_gain * ts.speed * std::sin(ts.course - ts.track_bearing))
-               / (m_args.ext_trgain * ts.track_pos.y));
+            ref = ts.track_bearing - std::pow(kcorr, m_args.ext_gain) * m_args.entry_angle * (1 + (m_gain * ts.speed * std::sin(ts.course - ts.track_bearing)) / (m_args.ext_trgain * ts.track_pos.y));
           }
           else
           {
@@ -160,7 +155,7 @@ namespace Control
           }
 
           if (ts.cc)
-            ref += state.psi - ts.course;  // course control rather than yaw control
+            ref += state.psi - ts.course; // course control rather than yaw control
 
           spew("lte=%0.1f cadj=%0.1f attack=%0.1f", std::fabs(ts.track_pos.y),
                Angles::degrees(Angles::normalizeRadian(std::fabs(state.psi - std::atan2(state.vy, state.vx)))),
@@ -174,7 +169,7 @@ namespace Control
         //! Execute a loiter control step
         //! From base class PathController
         void
-        loiter(const IMC::EstimatedState& state, const TrackingState& ts)
+        loiter(const IMC::EstimatedState &state, const TrackingState &ts)
         {
           double ref = DUNE::Math::c_half_pi + std::atan(2 * m_gain * (ts.range - ts.loiter.radius));
 
@@ -184,7 +179,7 @@ namespace Control
           ref += DUNE::Math::c_pi + ts.los_angle;
 
           if (ts.cc)
-            ref += state.psi - ts.course;  // course control
+            ref += state.psi - ts.course; // course control
 
           // Dispatch heading reference
           m_heading.value = Angles::normalizeRadian(ref);

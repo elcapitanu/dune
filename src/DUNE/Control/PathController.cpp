@@ -56,145 +56,144 @@ namespace DUNE
     //! Depth margin when limiting depth in bottom tracker
     static const float c_depth_margin = 1.0;
 
-    PathController::PathController(std::string name, Tasks::Context& ctx):
-      Task(name, ctx),
-      m_bt_entity(NULL),
-      m_running_monitors(true),
-      m_error(false),
-      m_setup(true),
-      m_braking(false),
-      m_jump_monitors(false),
-      m_aloops(0),
-      m_btrack(NULL),
-      m_scope_ref(0)
+    PathController::PathController(std::string name, Tasks::Context &ctx) : Task(name, ctx),
+                                                                            m_bt_entity(NULL),
+                                                                            m_running_monitors(true),
+                                                                            m_error(false),
+                                                                            m_setup(true),
+                                                                            m_braking(false),
+                                                                            m_jump_monitors(false),
+                                                                            m_aloops(0),
+                                                                            m_btrack(NULL),
+                                                                            m_scope_ref(0)
     {
       param("Control Frequency", m_cperiod)
-      .defaultValue("10")
-      .description("Control frequency (< 0 for event-driven EstimatedState processing)")
-      .units(Units::Hertz);
+          .defaultValue("10")
+          .description("Control frequency (< 0 for event-driven EstimatedState processing)")
+          .units(Units::Hertz);
 
       param("State Report Frequency", m_speriod)
-      .defaultValue("1")
-      .description("State report frequency")
-      .units(Units::Hertz);
+          .defaultValue("1")
+          .description("State report frequency")
+          .units(Units::Hertz);
 
       param("Course Control", m_course_ctl)
-      .defaultValue("true")
-      .description("Enable course control");
+          .defaultValue("true")
+          .description("Enable course control");
 
       param("Along-track -- Monitor", m_atm.enabled)
-      .defaultValue("true")
-      .description("Enable along-track error monitoring");
+          .defaultValue("true")
+          .description("Enable along-track error monitoring");
 
       param("Along-track -- Check Period", m_atm.period)
-      .defaultValue("15")
-      .description("Period for along-track error check")
-      .units(Units::Second);
+          .defaultValue("15")
+          .description("Period for along-track error check")
+          .units(Units::Second);
 
       param("Along-track -- Minimum Speed", m_atm.min_speed)
-      .defaultValue("0.25")
-      .description("Minimum speed for along-track progress")
-      .units(Units::MeterPerSecond);
+          .defaultValue("0.25")
+          .description("Minimum speed for along-track progress")
+          .units(Units::MeterPerSecond);
 
       param("Along-track -- Minimum Yaw", m_atm.min_yaw)
-      .defaultValue("10")
-      .description("Minimum yaw speed for track bearing convergence")
-      .units(Units::DegreePerSecond);
+          .defaultValue("10")
+          .description("Minimum yaw speed for track bearing convergence")
+          .units(Units::DegreePerSecond);
 
       param("Cross-track -- Monitor", m_ctm.enabled)
-      .defaultValue("true")
-      .description("Enable cross-track error monitoring");
+          .defaultValue("true")
+          .description("Enable cross-track error monitoring");
 
       param("Cross-track -- Distance Limit", m_ctm.distance_limit)
-      .defaultValue("15")
-      .description("Distance threshold value for cross-track error")
-      .units(Units::Meter);
+          .defaultValue("15")
+          .description("Distance threshold value for cross-track error")
+          .units(Units::Meter);
 
       param("Cross-track -- Time Limit", m_ctm.time_limit)
-      .defaultValue("10")
-      .description("Time threshold value for cross-track error")
-      .units(Units::Second);
+          .defaultValue("10")
+          .description("Time threshold value for cross-track error")
+          .units(Units::Second);
 
       param("Cross-track -- Nav. Unc. Factor", m_ctm.nav_unc_factor)
-      .defaultValue("-1")
-      .description("");
+          .defaultValue("-1")
+          .description("");
 
       param("Position Jump Threshold", m_jump_threshold)
-      .defaultValue("7.0")
-      .units(Units::Meter)
-      .description("Threshold for a jump in EstimatedState to turn monitors off");
+          .defaultValue("7.0")
+          .units(Units::Meter)
+          .description("Threshold for a jump in EstimatedState to turn monitors off");
 
       param("Position Jump Time Factor", m_jump_factor)
-      .defaultValue("0.3")
-      .minimumValue("0.1")
-      .units(Units::MeterPerSecond)
-      .description("Relation between monitor disabling time and position jump");
+          .defaultValue("0.3")
+          .minimumValue("0.1")
+          .units(Units::MeterPerSecond)
+          .description("Relation between monitor disabling time and position jump");
 
       param("ETA Minimum Speed", m_eta_min_speed)
-      .defaultValue("1.0")
-      .minimumValue("0.1")
-      .units(Units::MeterPerSecond)
-      .description("ETA minimum admissible speed");
+          .defaultValue("1.0")
+          .minimumValue("0.1")
+          .units(Units::MeterPerSecond)
+          .description("ETA minimum admissible speed");
 
       param("New Reference Timeout", m_new_ref_timeout)
-      .defaultValue("5")
-      .minimumValue("3")
-      .maximumValue("10")
-      .units(Units::Second)
-      .description("Timeout for new incoming path reference");
+          .defaultValue("5")
+          .minimumValue("3")
+          .maximumValue("10")
+          .units(Units::Second)
+          .description("Timeout for new incoming path reference");
 
       param("Bottom Track -- Enabled", m_btd.enabled)
-      .defaultValue("false")
-      .description("Enable or disable bottom track control");
+          .defaultValue("false")
+          .description("Enable or disable bottom track control");
 
       param("Bottom Track -- Forward Samples", m_btd.args.fsamples)
-      .defaultValue("5")
-      .description("Number of samples for forward range moving average");
+          .defaultValue("5")
+          .description("Number of samples for forward range moving average");
 
       param("Bottom Track -- Safe Pitch", m_btd.args.safe_pitch)
-      .defaultValue("15.0")
-      .units(Units::Degree)
-      .description("Safe pitch angle to perform bottom tracking");
+          .defaultValue("15.0")
+          .units(Units::Degree)
+          .description("Safe pitch angle to perform bottom tracking");
 
       param("Bottom Track -- Slope Hysteresis", m_btd.args.slope_hyst)
-      .defaultValue("1.5")
-      .units(Units::Degree)
-      .description("Slope hysteresis when recovering from avoidance");
+          .defaultValue("1.5")
+          .units(Units::Degree)
+          .description("Slope hysteresis when recovering from avoidance");
 
       param("Bottom Track -- Minimum Range", m_btd.args.min_range)
-      .defaultValue("4.0")
-      .units(Units::Meter)
-      .description("Minimum admissible forward range for bottom tracking");
+          .defaultValue("4.0")
+          .units(Units::Meter)
+          .description("Minimum admissible forward range for bottom tracking");
 
       param("Bottom Track -- Check Trend", m_btd.args.check_trend)
-      .defaultValue("true")
-      .description("Check slope angle trend in unsafe state");
+          .defaultValue("true")
+          .description("Check slope angle trend in unsafe state");
 
       param("Bottom Track -- Execution Frequency", m_btd.args.control_period)
-      .defaultValue("5")
-      .units(Units::Hertz)
-      .description("Bottom tracker's execution frequency");
+          .defaultValue("5")
+          .units(Units::Hertz)
+          .description("Bottom tracker's execution frequency");
 
       param("Bottom Track -- Depth Avoidance", m_btd.args.depth_avoid)
-      .defaultValue("true")
-      .description("Enable or disable obstacle avoidance during depth control");
+          .defaultValue("true")
+          .description("Enable or disable obstacle avoidance during depth control");
 
       param("Bottom Track -- Admissible Altitude", m_btd.args.adm_alt)
-      .defaultValue("3.0")
-      .units(Units::Meter)
-      .description("Admissible altitude when doing depth control");
+          .defaultValue("3.0")
+          .units(Units::Meter)
+          .description("Admissible altitude when doing depth control");
 
       param("Bottom Track -- Minimum Depth", m_btd.args.min_depth)
-      .defaultValue("0.0")
-      .units(Units::Meter)
-      .visibility(Tasks::Parameter::VISIBILITY_USER)
-      .scope(Tasks::Parameter::SCOPE_MANEUVER)
-      .description("Minimum depth to maintain during bottom tracking");
+          .defaultValue("0.0")
+          .units(Units::Meter)
+          .visibility(Tasks::Parameter::VISIBILITY_USER)
+          .scope(Tasks::Parameter::SCOPE_MANEUVER)
+          .description("Minimum depth to maintain during bottom tracking");
 
       param("Maximum Track Length", m_max_track_length)
-      .defaultValue("25000")
-      .units(Units::Meter)
-      .description("Maximum adimissible track length");
+          .defaultValue("25000")
+          .units(Units::Meter)
+          .description("Maximum adimissible track length");
 
       m_ctx.config.get("General", "Absolute Maximum Depth", "50.0", m_btd.args.depth_limit);
       m_btd.args.depth_limit -= c_depth_margin;
@@ -275,7 +274,8 @@ namespace DUNE
 
     void
     PathController::onResourceRelease(void)
-    { }
+    {
+    }
 
     void
     PathController::onEntityReservation(void)
@@ -285,7 +285,7 @@ namespace DUNE
     }
 
     void
-    PathController::consume(const IMC::Brake* brake)
+    PathController::consume(const IMC::Brake *brake)
     {
       if (brake->op == IMC::Brake::OP_START)
       {
@@ -299,13 +299,15 @@ namespace DUNE
     }
 
     void
-    PathController::consume(const IMC::DesiredPath* dpath)
+    PathController::consume(const IMC::DesiredPath *dpath)
     {
       if (!isActive())
       {
         war(DTR("not active"));
         return;
       }
+
+      inf("Initial (lat, lon): %f, %f || End (lat,lon): %f, %f", dpath->start_lat, dpath->start_lon, dpath->end_lat, dpath->end_lon);
 
       const double now = Clock::get();
       const bool no_start = setStartPoint(now, dpath);
@@ -316,6 +318,7 @@ namespace DUNE
 
       if (m_max_track_length > 0 && m_ts.track_length > m_max_track_length)
       {
+        inf("Desired track length: %f , Max track: %f", m_ts.track_length, m_max_track_length);
         signalError(DTR("track length is too long"));
         return;
       }
@@ -339,9 +342,23 @@ namespace DUNE
       reportPathControlState(true);
       updateEntityState();
 
-      inf(DTR("path (lat/lon): %0.5f %0.5f to %0.5f %0.5f"),
-          Angles::degrees(m_pcs.start_lat), Angles::degrees(m_pcs.start_lon),
-          Angles::degrees(m_pcs.end_lat), Angles::degrees(m_pcs.end_lon));
+      // inf(DTR("path (lat/lon): %0.5f %0.5f to %0.5f %0.5f"),
+      //     Angles::degrees(m_pcs.start_lat), Angles::degrees(m_pcs.start_lon),
+      //     Angles::degrees(m_pcs.end_lat), Angles::degrees(m_pcs.end_lon));
+
+      inf("state (lat/lon) %0.5f %0.5f"
+          " | path (x,y,z) %0.2f, %0.2f, %0.2f to %0.2f, %0.2f, %0.2f"
+          " | length(m) / bearing (dg): %0.2f / %0.2f"
+          " | state (x,y,z) %0.2f,%0.2f,%0.2f"
+          " | track pos (x,y,z): %0.2f, %0.2f, %0.2f"
+          " | course error (dg): %0.2f",
+          Angles::degrees(m_estate.lat), Angles::degrees(m_estate.lon),
+          m_ts.start.x, m_ts.start.y, m_ts.start.z,
+          m_ts.end.x, m_ts.end.y, m_ts.end.z,
+          m_ts.track_length, Angles::degrees(m_ts.track_bearing),
+          m_estate.x, m_estate.y, m_estate.z,
+          m_ts.track_pos.x, m_ts.track_pos.y, m_ts.track_pos.z,
+          Angles::degrees(m_ts.course_error));
 
       trace("state (lat/lon) %0.5f %0.5f"
             " | path (x,y,z) %0.2f, %0.2f, %0.2f to %0.2f, %0.2f, %0.2f"
@@ -371,14 +388,15 @@ namespace DUNE
         // Initialize cross-track monitoring data.
         m_ctm.diverging = false;
       }
-
       // Call path startup handler.
       onPathStartup(m_estate, m_ts);
     }
 
     bool
-    PathController::setStartPoint(double now, const IMC::DesiredPath* dpath)
+    PathController::setStartPoint(double now, const IMC::DesiredPath *dpath)
     {
+      inf("Dpath start (lat/long) = %0.5f %0.5f | end (lat/long) = %0.5f %0.5f", dpath->start_lat, dpath->start_lon, dpath->end_lon, dpath->end_lat);
+
       m_pcs.flags = 0;
       m_pcs.path_ref = dpath->path_ref;
 
@@ -425,10 +443,10 @@ namespace DUNE
     }
 
     void
-    PathController::setEndPoint(const IMC::DesiredPath* dpath)
+    PathController::setEndPoint(const IMC::DesiredPath *dpath)
     {
       setTrackingCoord(m_ts.start, m_pcs.start_lat, m_pcs.start_lon,
-                        m_pcs.start_z, static_cast<IMC::ZUnits>(m_pcs.start_z_units));
+                       m_pcs.start_z, static_cast<IMC::ZUnits>(m_pcs.start_z_units));
 
       if ((dpath->flags & IMC::DesiredPath::FL_LOITER_CURR) != 0 &&
           dpath->lradius > 0)
@@ -449,11 +467,11 @@ namespace DUNE
       }
 
       setTrackingCoord(m_ts.end, m_pcs.end_lat, m_pcs.end_lon,
-                        m_pcs.end_z, static_cast<IMC::ZUnits>(m_pcs.end_z_units));
+                       m_pcs.end_z, static_cast<IMC::ZUnits>(m_pcs.end_z_units));
     }
 
     void
-    PathController::setControlLoops(const IMC::DesiredPath* dpath)
+    PathController::setControlLoops(const IMC::DesiredPath *dpath)
     {
       // Send altitude or depth references, unless NO_Z flag is set
       // or controller wishes to handle depth/altitude in a specific manner
@@ -496,7 +514,7 @@ namespace DUNE
     }
 
     void
-    PathController::handleLoiter(const IMC::DesiredPath* dpath)
+    PathController::handleLoiter(const IMC::DesiredPath *dpath)
     {
       m_ts.loiter.radius = dpath->lradius;
       m_ts.loiter.clockwise =
@@ -561,34 +579,34 @@ namespace DUNE
     }
 
     void
-    PathController::consume(const IMC::NavigationUncertainty* nu)
+    PathController::consume(const IMC::NavigationUncertainty *nu)
     {
       m_ctm.nav_uncertainty = m_ctm.nav_unc_factor * std::sqrt(std::max(nu->x, nu->y));
     }
 
     void
-    PathController::consume(const IMC::Distance* dist)
+    PathController::consume(const IMC::Distance *dist)
     {
       if (isTrackingBottom())
         m_btrack->onDistance(dist);
     }
 
     void
-    PathController::consume(const IMC::DesiredZ* zref)
+    PathController::consume(const IMC::DesiredZ *zref)
     {
       if (isTrackingBottom())
         m_btrack->onDesiredZ(zref);
     }
 
     void
-    PathController::consume(const IMC::DesiredSpeed* dspeed)
+    PathController::consume(const IMC::DesiredSpeed *dspeed)
     {
       if (isTrackingBottom())
         m_btrack->onDesiredSpeed(dspeed);
     }
 
     void
-    PathController::consume(const IMC::EstimatedState* es)
+    PathController::consume(const IMC::EstimatedState *es)
     {
       // Pass EstimatedStates from the specified vehicle.
       if (sourceFilter(es))
@@ -651,12 +669,16 @@ namespace DUNE
         const double lat = m_estate.lat;
         const double lon = m_estate.lon;
 
+        inf("Before conversion:START(X, Y): %0.5lf, %0.5lf || END(X,Y): %0.5lf, %0.5lf", m_ts.start.x, m_ts.start.y, m_ts.end.x, m_ts.end.y);
+
         WGS84::displacement(lat, lon, 0,
                             m_pcs.start_lat, m_pcs.start_lon, 0,
                             &m_ts.start.x, &m_ts.start.y);
         WGS84::displacement(lat, lon, 0,
                             m_pcs.end_lat, m_pcs.end_lon, 0,
                             &m_ts.end.x, &m_ts.end.y);
+
+        inf("After conversion:START(X, Y): %0.5lf, %0.5lf || END(X,Y): %0.5lf, %0.5lf", m_ts.start.x, m_ts.start.y, m_ts.end.x, m_ts.end.y);
       }
 
       const double now = Clock::get();
@@ -782,16 +804,16 @@ namespace DUNE
         m_ts.nearby = false;
       }
 
-      m_ts.track_pos.z = m_estate.z - m_ts.start.z; // vertical-track
+      m_ts.track_pos.z = m_estate.z - m_ts.start.z;                // vertical-track
       m_ts.track_vel.x = m_ts.speed * std::cos(m_ts.course_error); // along-track
       m_ts.track_vel.y = m_ts.speed * std::sin(m_ts.course_error); // cross-track
-      m_ts.track_vel.z = std::sin(m_estate.theta) * m_estate.vz; // vertical-track
+      m_ts.track_vel.z = std::sin(m_estate.theta) * m_estate.vz;   // vertical-track
     }
 
     bool
-    PathController::navigationJumped(const IMC::EstimatedState* new_state,
-                                     const IMC::EstimatedState* old_state,
-                                     float& distance, bool change_ref)
+    PathController::navigationJumped(const IMC::EstimatedState *new_state,
+                                     const IMC::EstimatedState *old_state,
+                                     float &distance, bool change_ref)
     {
       if (change_ref)
       {
@@ -908,7 +930,7 @@ namespace DUNE
     }
 
     void
-    PathController::consume(const IMC::ControlLoops* cloops)
+    PathController::consume(const IMC::ControlLoops *cloops)
     {
       if (cloops->scope_ref < m_scope_ref)
         return;
@@ -941,6 +963,7 @@ namespace DUNE
       m_error = false;
       m_tracking = false;
       m_braking = false;
+      inf("OHH MAMA ");
       debug("enabling");
       onPathActivation();
       updateEntityState();
@@ -966,7 +989,7 @@ namespace DUNE
     }
 
     void
-    PathController::signalError(const std::string& msg)
+    PathController::signalError(const std::string &msg)
     {
       m_error = true;
       err("%s", msg.c_str());
@@ -1040,12 +1063,12 @@ namespace DUNE
         m_pcs.flags |= IMC::PathControlState::FL_LOITERING;
       else
         m_pcs.flags &= ~IMC::PathControlState::FL_LOITERING;
-      m_pcs.eta = (uint16_t) Math::round(m_ts.eta);
+      m_pcs.eta = (uint16_t)Math::round(m_ts.eta);
       dispatch(m_pcs);
     }
 
     void
-    PathController::loiter(const IMC::EstimatedState& state, const TrackingState& ts)
+    PathController::loiter(const IMC::EstimatedState &state, const TrackingState &ts)
     {
       TrackingState lts = ts;
 
@@ -1064,7 +1087,7 @@ namespace DUNE
     }
 
     double
-    PathController::getEta(const TrackingState& ts)
+    PathController::getEta(const TrackingState &ts)
     {
       const float errx = std::abs(ts.track_length - ts.track_pos.x);
       const float erry = std::abs(ts.track_pos.y);
@@ -1078,7 +1101,7 @@ namespace DUNE
 
       return std::min(65535.0, eta - time_factor);
     }
-    
+
     double
     PathController::getZ(IMC::ZUnits z_unit) const
     {
@@ -1094,9 +1117,9 @@ namespace DUNE
     }
 
     void
-    PathController::setTrackingCoord(TrackingState::Coord& coord, 
-                      double lat, double lon,
-                      double z, IMC::ZUnits z_unit)
+    PathController::setTrackingCoord(TrackingState::Coord &coord,
+                                     double lat, double lon,
+                                     double z, IMC::ZUnits z_unit)
     {
       // Height is converted directly
       if (z_unit == IMC::Z_HEIGHT)
@@ -1109,8 +1132,8 @@ namespace DUNE
 
       // Depth and Altitude are converted separately
       WGS84::displacement(m_estate.lat, m_estate.lon, 0,
-                            lat, lon, 0,
-                            &coord.x, &coord.y);
+                          lat, lon, 0,
+                          &coord.x, &coord.y);
 
       if (z_unit == IMC::Z_DEPTH)
       {
@@ -1137,7 +1160,7 @@ namespace DUNE
     }
 
     bool
-    PathController::depthToLocal(double depth_ref, double& z)
+    PathController::depthToLocal(double depth_ref, double &z)
     {
       // Valid depth
       if (m_estate.depth >= 0)
@@ -1151,7 +1174,7 @@ namespace DUNE
     }
 
     bool
-    PathController::altitudeToLocal(double alt_ref, double& z)
+    PathController::altitudeToLocal(double alt_ref, double &z)
     {
       // Valid altitude
       if (m_estate.alt >= 0)
@@ -1159,7 +1182,7 @@ namespace DUNE
         // Valid depth -> UUV
         if (m_estate.depth >= 0)
         {
-          double last_z = m_estate.z - m_estate.depth; // last_z reference, as calculated in BasicNavigation
+          double last_z = m_estate.z - m_estate.depth;                // last_z reference, as calculated in BasicNavigation
           double depth_ref = m_estate.depth + m_estate.alt - alt_ref; // Convert altitude to depth
           z = last_z + depth_ref;
           return true;

@@ -29,6 +29,9 @@
 
 // DUNE headers.
 #include <DUNE/DUNE.hpp>
+#include <DUNE/Coordinates/WGS84.hpp>
+#include <DUNE/Coordinates/General.hpp>
+#include <string.h>
 // #include "Controller.hpp"
 
 namespace MiniASV
@@ -106,7 +109,7 @@ namespace MiniASV
       }
 
       void
-      dispatchData()
+      dispatchDataMotor()
       {
         m_tstamp = Clock::getSinceEpoch();
         m_pwmR.setTimeStamp(m_tstamp);
@@ -118,20 +121,74 @@ namespace MiniASV
       }
 
       //! Main loop.
-      void
-      onMain(void)
+      void onMain(void)
       {
         while (!stopping())
         {
           waitForMessages(1.0);
 
-          int input;
-
+          std::string input;
           std::cin >> input;
+          switch (input[0])
+          {
+          //! For motor commands
+          case 'm':
+          {
+            int value = std::stoi(input.substr(1, 3));
+            m_pwmR.duty_cycle = m_pwmL.duty_cycle = value;
 
-          m_pwmR.duty_cycle = m_pwmL.duty_cycle = input;
+            dispatchDataMotor();
+            break;
+          }
+          //! For GoTo Commands. FIrst is x, second is y
+          case 'l':
+            int comma = input.find(',');
+            // std::cout << "Comma is in " << comma << std::endl;
+            float x = std::stof(input.substr(1, comma));
+            float y = std::stof(input.substr(comma + 1, input.size()));
 
-          dispatchData();
+            // std::cout << "(x, y) " << x << ", " << y << std::endl;
+
+            IMC::Goto maneuver;
+
+            if ((x > 0) && (x <= 20) && (y > 0) & (y <= 20))
+            {
+              maneuver.lon = (x - 0) * (-8.7080671 - -8.70836583) / (20 - 0) - 8.70836583;
+              maneuver.lat = (y - 0) * (41.18388408 - 41.18365927) / (20 - 0) + 41.18365927;
+            }
+
+            // maneuver.lon = DUNE::Math::Angles::radians(maneuver.lon);
+            // maneuver.lat = DUNE::Math::Angles::radians(maneuver.lat);
+
+            //! Create Goto command in database
+            // IMC::PlanGeneration m_gen;
+
+            // // inf("Goto ID %d", IMC::Goto::getIdStatic());
+            // // m_gen.op = IMC::PlanGeneration::OP_REQUEST;
+            // // m_gen.plan_id = "go"; // Goto ID
+            // // m_gen.params = "loc=;lat=" + std::to_string(maneuver.lat) + ";lon=" + std::to_string(maneuver.lon) + ";depth=0";
+            // // m_gen.cmd = IMC::PlanGeneration::CMD_GENERATE;
+            // // dispatch(m_gen);
+
+            // // m_gen.cmd = IMC::PlanGeneration::CMD_EXECUTE;
+            // // dispatch(m_gen);
+
+            // IMC::PlanControl *p_control = new IMC::PlanControl();
+            // IMC::PlanSpecification *ps = new IMC::PlanSpecification();
+
+            // p_control->type = IMC::PlanControl::PC_REQUEST;
+            // p_control->op = IMC::PlanControl::PC_START;
+            // p_control->request_id = 151;
+            // p_control->flags = IMC::PlanControl::FLG_CALIBRATE;
+            // p_control->setDestination(p_control->getSource());
+            // p_control->setDestinationEntity(p_control->getSourceEntity());
+            // p_control->plan_id = "rows_coverage_caravela";
+            // // p_control->arg.set(*ps);
+            // // p_control->info = "Will this finally work?"; // Useless ahah
+            // dispatch(*p_control);
+
+            break;
+          }
         }
       }
     };
