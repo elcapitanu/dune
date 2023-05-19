@@ -120,6 +120,30 @@ namespace Control
           enableControlLoops(IMC::CL_YAW);
         }
 
+        double
+        x_pos_to_longitude(double x)
+        {
+          return (x - 0) * (-8.7080671 - -8.70836583) / (20 - 0) - 8.70836583;
+        }
+
+        double
+        y_pos_to_latitude(double y)
+        {
+          return (y - 0) * (41.18388408 - 41.18365927) / (20 - 0) + 41.18365927;
+        }
+
+        double
+        longitude_to_x_pos(double lon)
+        {
+          return (lon + 8.70836583) * (20 - 0) / (-8.7080671 + 8.70836583) + 0;
+        }
+
+        double
+        latitude_to_y_pos(double lat)
+        {
+          return (lat - 41.18365927) * (20 - 0) / (41.18388408 - 41.18365927) + 0;
+        }
+
         //! Execute a path control step
         //! From base class PathController
         void
@@ -131,7 +155,62 @@ namespace Control
           double kcorr = ts.track_pos.y / m_args.corridor;
           double akcorr = std::fabs(kcorr);
 
-          double ref;
+          bool laranja = true;
+
+          double ref = 0; // Radians of vector
+
+          double obs_x = x_pos_to_longitude(3), obs_y = y_pos_to_latitude(10); // FIXME: not fault free!
+
+          obs_x = DUNE::Math::Angles::radians(obs_x);
+          obs_y = DUNE::Math::Angles::radians(obs_y);
+
+          // calculate x and y based on track and current state
+
+          // for testing
+          obs_x = 3.5;
+          obs_y = 9;
+
+          double in_radius = 1.5, out_radius = 4;
+          double x_pos, y_pos;
+
+          DUNE::Coordinates::toWGS84(state, y_pos, x_pos); // Returns coordinates in radians
+          x_pos = DUNE::Math::Angles::degrees(x_pos);      // radians to degrees
+          y_pos = DUNE::Math::Angles::degrees(y_pos);      // radians to degrees
+          x_pos = longitude_to_x_pos(x_pos);               // degrees to pool
+          y_pos = latitude_to_y_pos(y_pos);                // degrees to pool
+
+          double in_x = abs(obs_x - x_pos);
+          double in_y = abs(obs_y - y_pos);
+
+          double in_abs = sqrt(pow(in_x, 2) + pow(in_y, 2));
+
+          inf("Pos(X, Y): %.2f, %.2f -> ABS: %.2f", x_pos, y_pos, in_abs);
+
+          double aux_x, aux_y;
+          double centerX, centerY;
+          double theta;
+
+          aux_x = obs_x - x_pos;
+          aux_y = obs_y - y_pos;
+
+          // Inside out radius, change bearing to tan of radius
+          // if (in_abs < out_radius)
+          // {
+          //   if (aux_y > 0)
+          //   {
+          //     ref += std::atan2(aux_y, aux_x);
+
+          //     if (aux_x > 0)
+          //     {
+          //       ref += DUNE::Math::Angles::degrees(90);
+          //     }
+          //     else
+          //     {
+          //       ref -= DUNE::Math::Angles::degrees(90);
+          //     }
+          //   }
+          //   inf("Out radius vector angle: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
+          // }
 
           if (ts.track_pos.x > ts.track_length)
           {
@@ -146,13 +225,21 @@ namespace Control
           else if (akcorr > 0.05)
           {
             // Inside corridor
-            ref = ts.track_bearing - std::pow(kcorr, m_args.ext_gain) * m_args.entry_angle * (1 + (m_gain * ts.speed * std::sin(ts.course - ts.track_bearing)) / (m_args.ext_trgain * ts.track_pos.y));
+            ref += ts.track_bearing - std::pow(kcorr, m_args.ext_gain) * m_args.entry_angle * (1 + (m_gain * ts.speed * std::sin(ts.course - ts.track_bearing)) / (m_args.ext_trgain * ts.track_pos.y));
           }
           else
           {
+            inf("All going good");
             // Over track (avoid singularities)
-            ref = ts.track_bearing;
+            ref += ts.track_bearing;
           }
+
+          // // Inside inner circle, go all the way backwards
+          // if (in_abs < in_radius)
+          // {
+          //   ref = std::atan2(-aux_y, -aux_x);
+          //   inf("Inside Radius overwrite: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
+          // }
 
           if (ts.cc)
             ref += state.psi - ts.course; // course control rather than yaw control

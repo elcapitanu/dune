@@ -291,7 +291,6 @@ namespace Plan
       void
       consume(const IMC::EntityActivationState *msg)
       {
-        spew("activa state in ON");
         // not local message.
         if (msg->getSource() != getSystemId())
           return;
