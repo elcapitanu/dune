@@ -194,23 +194,23 @@ namespace Control
           aux_y = obs_y - y_pos;
 
           // Inside out radius, change bearing to tan of radius
-          // if (in_abs < out_radius)
-          // {
-          //   if (aux_y > 0)
-          //   {
-          //     ref += std::atan2(aux_y, aux_x);
+          if (in_abs < out_radius)
+          {
+            if (aux_y > 0)
+            {
+              ref += std::atan2(aux_y, aux_x);
 
-          //     if (aux_x > 0)
-          //     {
-          //       ref += DUNE::Math::Angles::degrees(90);
-          //     }
-          //     else
-          //     {
-          //       ref -= DUNE::Math::Angles::degrees(90);
-          //     }
-          //   }
-          //   inf("Out radius vector angle: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
-          // }
+              if (aux_x > 0)
+              {
+                ref += DUNE::Math::Angles::degrees(90);
+              }
+              else
+              {
+                ref -= DUNE::Math::Angles::degrees(90);
+              }
+            }
+            inf("Out radius vector angle: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
+          }
 
           if (ts.track_pos.x > ts.track_length)
           {
@@ -234,12 +234,12 @@ namespace Control
             ref += ts.track_bearing;
           }
 
-          // // Inside inner circle, go all the way backwards
-          // if (in_abs < in_radius)
-          // {
-          //   ref = std::atan2(-aux_y, -aux_x);
-          //   inf("Inside Radius overwrite: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
-          // }
+          // Inside inner circle, go all the way backwards
+          if (in_abs < in_radius)
+          {
+            ref = std::atan2(-aux_y, -aux_x);
+            inf("Inside Radius overwrite: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
+          }
 
           if (ts.cc)
             ref += state.psi - ts.course; // course control rather than yaw control
