@@ -121,31 +121,34 @@ namespace Control
         }
 
         double
-        x_pos_to_longitude(double x)
+        x_pos_to_latitude(double x)
         {
-          return (x - 0) * (-8.7080671 - -8.70836583) / (20 - 0) - 8.70836583;
+          return (x - 0) * (41.18388408 - 41.18365927) / (25 - 0) + 41.18365927;
         }
 
         double
-        y_pos_to_latitude(double y)
+        y_pos_to_longitude(double y)
         {
-          return (y - 0) * (41.18388408 - 41.18365927) / (20 - 0) + 41.18365927;
+          return (y - 0) * (-8.7080671 - -8.70836583) / (25 - 0) - 8.70836583;
         }
 
+        //! In meters
         double
-        longitude_to_x_pos(double lon)
+        latitude_to_x_pos(double lat)
         {
-          return (lon + 8.70836583) * (20 - 0) / (-8.7080671 + 8.70836583) + 0;
+          return (lat - 41.18365927) * (25 - 0) / (41.18388408 - 41.18365927) + 0;
         }
 
+        //! In meters
         double
-        latitude_to_y_pos(double lat)
+        longitude_to_y_pos(double lon)
         {
-          return (lat - 41.18365927) * (20 - 0) / (41.18388408 - 41.18365927) + 0;
+          return (lon + 8.70836583) * (25 - 0) / (-8.7080671 + 8.70836583) + 0;
         }
 
         //! Execute a path control step
         //! From base class PathController
+        //! X and Y are inverted. X is the vertical axis and Y is the horizontal axis
         void
         step(const IMC::EstimatedState &state, const TrackingState &ts)
         {
@@ -159,57 +162,59 @@ namespace Control
 
           double ref = 0; // Radians of vector
 
-          double obs_x = x_pos_to_longitude(3), obs_y = y_pos_to_latitude(10); // FIXME: not fault free!
-
-          obs_x = DUNE::Math::Angles::radians(obs_x);
-          obs_y = DUNE::Math::Angles::radians(obs_y);
-
-          // calculate x and y based on track and current state
-
           // for testing
-          obs_x = 3.5;
-          obs_y = 9;
+          double obs_x = 12.5;
+          double obs_y = 3;
 
-          double in_radius = 1.5, out_radius = 4;
+          double in_radius = 3.5, out_radius = 5;
           double x_pos, y_pos;
 
-          DUNE::Coordinates::toWGS84(state, y_pos, x_pos); // Returns coordinates in radians
+          // calculate x and y based on track and current state
+          DUNE::Coordinates::toWGS84(state, x_pos, y_pos); // Returns coordinates in radians
           x_pos = DUNE::Math::Angles::degrees(x_pos);      // radians to degrees
           y_pos = DUNE::Math::Angles::degrees(y_pos);      // radians to degrees
-          x_pos = longitude_to_x_pos(x_pos);               // degrees to pool
-          y_pos = latitude_to_y_pos(y_pos);                // degrees to pool
+
+          x_pos = latitude_to_x_pos(x_pos);  // degrees to pool
+          y_pos = longitude_to_y_pos(y_pos); // degrees to pool
 
           double in_x = abs(obs_x - x_pos);
           double in_y = abs(obs_y - y_pos);
+          double in_angle = atan2(y_pos - obs_y, x_pos - obs_x);
 
           double in_abs = sqrt(pow(in_x, 2) + pow(in_y, 2));
 
           inf("Pos(X, Y): %.2f, %.2f -> ABS: %.2f", x_pos, y_pos, in_abs);
 
+          double x_final = x_pos + ts.range * cos(ts.los_angle);
+          double y_final = y_pos + ts.range * sin(ts.los_angle);
+
+          double theta = std::atan2(y_final - obs_y, x_final - obs_x); // Angle between obstacle and final position
+
+          // angle used to know if is past buoy
+          double leaving_angle = in_angle - theta;
+
           double aux_x, aux_y;
           double centerX, centerY;
-          double theta;
 
-          aux_x = obs_x - x_pos;
-          aux_y = obs_y - y_pos;
+          aux_x = x_pos - obs_x;
+          aux_y = y_pos - obs_y;
 
-          // Inside out radius, change bearing to tan of radius
-          if (in_abs < out_radius)
+          // Doesn't have space to go because of the wall
+          if ((obs_y - out_radius) <= 1 || (out_radius + obs_y) >= 24)
           {
-            if (aux_y > 0)
-            {
-              ref += std::atan2(aux_y, aux_x);
+            out_radius = out_radius - 1 - abs(obs_y - out_radius);
+            in_radius = 1.1;
+          }
+          else if ((obs_x - out_radius) <= 1 || (out_radius + obs_x) >= 24)
+          {
+            out_radius = out_radius - 1 - abs(obs_x - out_radius);
+            in_radius = 1.1;
+          }
 
-              if (aux_x > 0)
-              {
-                ref += DUNE::Math::Angles::degrees(90);
-              }
-              else
-              {
-                ref -= DUNE::Math::Angles::degrees(90);
-              }
-            }
-            inf("Out radius vector angle: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
+          if (out_radius < in_radius)
+          {
+            out_radius = 2.5;
+            inf("AHHHH MERDEI, ERRO ENTRE PAREDE E OBSTACULO");
           }
 
           if (ts.track_pos.x > ts.track_length)
@@ -229,17 +234,58 @@ namespace Control
           }
           else
           {
-            inf("All going good");
             // Over track (avoid singularities)
             ref += ts.track_bearing;
           }
 
-          // Inside inner circle, go all the way backwards
-          if (in_abs < in_radius)
+          // Inside out radius, change bearing to tan of radius
+          if (leaving_angle <= DUNE::Math::Angles::radians(-90) || leaving_angle >= DUNE::Math::Angles::radians(90)) // entrou aqui quando devia
           {
-            ref = std::atan2(-aux_y, -aux_x);
-            inf("Inside Radius overwrite: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
+            if (in_abs < out_radius)
+            {
+              ref = std::atan2(aux_y, aux_x);
+              inf("out radius initial: %.2f", Angles::degrees(Angles::normalizeRadian(ref)));
+              // if (laranja)
+              // {
+              //   ref -= DUNE::Math::Angles::radians(90) - DUNE::Math::Angles::radians(10);
+              // }
+              // else
+              // {
+              //   ref += DUNE::Math::Angles::radians(90) + DUNE::Math::Angles::radians(10);
+              // }
+
+              // Works with this <3
+              if (leaving_angle > DUNE::Math::Angles::radians(90))
+              {
+                ref -= DUNE::Math::Angles::radians(90) - DUNE::Math::Angles::radians(10); // Extra value to make ti a little more agressive
+              }
+              else
+              {
+                ref += DUNE::Math::Angles::radians(90) + DUNE::Math::Angles::radians(10); // Extra value to make ti a little more agressive
+              }
+              inf("out radius final: %.2f", Angles::degrees(Angles::normalizeRadian(ref)));
+            }
+
+            // Inside inner circle, go all the way backwards
+            if (in_abs < in_radius)
+            {
+              ref = std::atan2(aux_y, aux_x);
+              inf("Inside Radius overwrite: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
+            }
           }
+
+          // Stay away from the pool wall
+          // TODO: verify all walls
+          if (x_pos <= 1 || x_pos >= 24 || y_pos <= 1 || y_pos >= 24)
+          {
+            aux_x = 12.5 - x_pos;
+            aux_y = 12.5 - y_pos;
+
+            ref = std::atan2(aux_y, aux_x); // Always points to the center of the pool
+            inf("Bro too close to the WALL");
+          }
+
+          inf("Loop ref: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
 
           if (ts.cc)
             ref += state.psi - ts.course; // course control rather than yaw control
