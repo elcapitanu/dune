@@ -135,6 +135,14 @@ namespace MiniASV
       //! Main loop.
       void onMain(void)
       {
+        IMC::LblEstimate lbl;
+
+        lbl.x = 12.5;
+        lbl.y = 1;
+
+        inf("Dispatched lbl");
+
+        dispatch(lbl);
 
         while (!stopping())
         {

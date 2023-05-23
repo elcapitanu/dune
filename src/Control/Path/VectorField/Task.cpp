@@ -37,7 +37,7 @@
 // ISO C++ 98 headers.
 #include <iomanip>
 #include <cmath>
-
+#include "Obstacles.hpp"
 // DUNE headers.
 #include <DUNE/DUNE.hpp>
 
@@ -67,6 +67,8 @@ namespace Control
         //! Task arguments.
         Arguments m_args;
 
+        ObstacleInterface obs;
+
         Task(const std::string &name, Tasks::Context &ctx) : DUNE::Control::PathController(name, ctx)
         {
           param("Corridor -- Width", m_args.corridor)
@@ -94,6 +96,8 @@ namespace Control
           param("Extended Control -- Turn Rate Gain", m_args.ext_trgain)
               .defaultValue("1.0")
               .description("Turn rate gain for extended control");
+
+          bind<IMC::LblEstimate>(this);
         }
 
         void
@@ -118,6 +122,14 @@ namespace Control
         {
           // Activate heading cotroller.
           enableControlLoops(IMC::CL_YAW);
+        }
+
+        void
+        consume(const IMC::LblEstimate *est)
+        {
+          inf("Received lbl");
+          obs.add_obstacle(est->x, est->y);
+          inf("After lbl (x, y) = %.2f, %.2f", obs.pos[0][0], obs.pos[0][1]);
         }
 
         double
@@ -162,10 +174,6 @@ namespace Control
 
           double ref = 0; // Radians of vector
 
-          // for testing
-          double obs_x = 25;
-          double obs_y = 25;
-
           double in_radius = 3.5, out_radius = 5;
           double x_pos, y_pos;
 
@@ -176,6 +184,11 @@ namespace Control
 
           x_pos = latitude_to_x_pos(x_pos);  // degrees to pool
           y_pos = longitude_to_y_pos(y_pos); // degrees to pool
+
+          int index = obs.closest_object(x_pos, y_pos);
+
+          double obs_x = obs.pos[index][0];
+          double obs_y = obs.pos[index][1];
 
           double in_x = abs(obs_x - x_pos);
           double in_y = abs(obs_y - y_pos);
@@ -198,6 +211,14 @@ namespace Control
 
           aux_x = x_pos - obs_x;
           aux_y = y_pos - obs_y;
+
+          // Check for the closest object
+          double aux_y = obs.pos[0][0];
+          double aux_x = obs.pos[0][1];
+
+          // for (int i = 0; i < obs.MAX_MACRO[0]; i++)
+          // {
+          // }
 
           // Doesn't have space to go because of the wall
           // if ((obs_y - out_radius) <= 1 || (out_radius + obs_y) >= 24)
