@@ -163,8 +163,8 @@ namespace Control
           double ref = 0; // Radians of vector
 
           // for testing
-          double obs_x = 25;
-          double obs_y = 25;
+          double obs_x = 30;
+          double obs_y = 30;
 
           double in_radius = 3.5, out_radius = 5;
           double x_pos, y_pos;

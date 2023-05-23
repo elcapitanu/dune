@@ -50,6 +50,8 @@ namespace MiniASV
       double input_timeout;
       //! Number of attempts before error
       int number_attempts;
+      //! Distance between anchors
+      int dist_anchors;
     };
 
     struct Task : public DUNE::Tasks::Task
@@ -64,6 +66,8 @@ namespace MiniASV
       Counter<double> m_wdog;
       //! IMC msg
       IMC::DeviceState m_position;
+      //! GPS
+      IMC::GpsFix m_gps;
       //! Read timestamp.
       double m_tstamp;
       //! Distances
@@ -94,6 +98,13 @@ namespace MiniASV
             .maximumValue("4.0")
             .units(Units::Second)
             .description("Amount of seconds to wait for data before reporting an error");
+
+        param("Distance Between Anchors", m_args.dist_anchors)
+            .defaultValue("4.0")
+            .minimumValue("1.0")
+            .maximumValue("20.0")
+            .units(Units::Meter)
+            .description("Distance between UWB Anchors");
       }
 
       //! Update internal state with new parameter values.
@@ -153,14 +164,34 @@ namespace MiniASV
           } */
       }
 
+      double
+      x_pos_to_latitude(double x)
+      {
+        return (x - 0) * (41.18388408 - 41.18365927) / (m_args.dist_anchors - 0) + 41.18365927;
+      }
+
+      double
+      y_pos_to_longitude(double y)
+      {
+        return (y - 0) * (-8.7080671 - -8.70836583) / (m_args.dist_anchors - 0) - 8.70836583;
+      }
+
       void dispatchData()
       {
         m_tstamp = Clock::getSinceEpoch();
-        m_position.setTimeStamp(m_tstamp);
-        m_position.x = m_x;
-        m_position.y = m_y;
-        m_position.z = 0;
-        dispatch(m_position, DF_KEEP_TIME);
+        m_gps.setTimeStamp(m_tstamp);
+        m_gps.lat = x_pos_to_latitude(m_x);
+        m_gps.lon = y_pos_to_longitude(m_y);
+        m_gps.validity |= IMC::GpsFix::GFV_VALID_POS;
+
+        dispatch(m_gps, DF_KEEP_TIME);
+
+        // m_position.setTimeStamp(m_tstamp);
+
+        // m_position.x = x_pos_to_latitude(m_x);
+        // m_position.y = y_pos_to_longitude(m_y);
+        // m_position.z = 0;
+        // dispatch(m_position, DF_KEEP_TIME);
       }
 
       bool
@@ -185,9 +216,8 @@ namespace MiniASV
           param = std::strtok(NULL, ",");
           m_distance2 = atof(param);
 
-
-          // anchors pos: (0,0) and (1,0)
-          m_x = (pow(m_distance1, 2) + pow(1, 2) - pow(m_distance2, 2)) / 2;
+          // anchors pos: (0,0) and (m_args.dist_anchors,0)
+          m_x = (pow(m_distance1, 2) + pow(m_args.dist_anchors, 2) - pow(m_distance2, 2)) / 2;
           m_y = sqrt(pow(m_distance1, 2) - pow(m_x, 2));
 
           inf("Estimated Vehicle Position: (%.3f, %.3f)", m_x, m_y);
