@@ -491,7 +491,7 @@ namespace DUNE
           if (m_wdog.overflow())
           {
             std::string msg = "Activation timeout - connect to device: ";
-            msg += m_uri;
+            //msg += m_uri;
             failActivation(DTR(msg.c_str()));
             queueState(SM_IDLE);
           }
