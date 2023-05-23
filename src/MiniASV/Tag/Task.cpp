@@ -178,6 +178,10 @@ namespace MiniASV
 
       void dispatchData()
       {
+        m_gps.setSource(60000);
+
+        m_gps.type = IMC::GpsFix::GFT_MANUAL_INPUT;
+
         m_tstamp = Clock::getSinceEpoch();
         m_gps.setTimeStamp(m_tstamp);
         m_gps.lat = x_pos_to_latitude(m_x);
@@ -216,8 +220,14 @@ namespace MiniASV
           param = std::strtok(NULL, ",");
           m_distance2 = atof(param);
 
+          while (!(m_distance1 + m_distance2 > m_args.dist_anchors && m_args.dist_anchors + m_distance1 > m_distance2 && m_args.dist_anchors + m_distance2 > m_distance1))
+          {
+            m_distance1 += 0.01;
+            m_distance2 += 0.01;
+          }
+
           // anchors pos: (0,0) and (m_args.dist_anchors,0)
-          m_x = (pow(m_distance1, 2) + pow(m_args.dist_anchors, 2) - pow(m_distance2, 2)) / 2;
+          m_x = (pow(m_distance1, 2) + pow(m_args.dist_anchors, 2) - pow(m_distance2, 2)) / (2 * m_args.dist_anchors);
           m_y = sqrt(pow(m_distance1, 2) - pow(m_x, 2));
 
           inf("Estimated Vehicle Position: (%.3f, %.3f)", m_x, m_y);
@@ -238,8 +248,10 @@ namespace MiniASV
         {
           waitForMessages(0.1);
 
-          if (haveNewData())
-            dispatchData();
+          haveNewData();
+
+          /* if (haveNewData())
+            dispatchData(); */
         }
       }
     };
