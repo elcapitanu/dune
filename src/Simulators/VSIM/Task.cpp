@@ -100,7 +100,7 @@ namespace Simulators
         bind<IMC::ServoPosition>(this);
         bind<IMC::SetThrusterActuation>(this);
         bind<IMC::EstimatedStreamVelocity>(this);
-        bind<IMC::EulerAngles>(this);
+        // bind<IMC::EulerAngles>(this);
       }
 
       void
@@ -199,13 +199,13 @@ namespace Simulators
               m_svel[2]);
       }
 
-      void
-      consume(const IMC::EulerAngles *msg)
-      {
-        roll = msg->phi;
-        pitch = msg->theta;
-        yaw = msg->psi;
-      }
+      // void
+      // consume(const IMC::EulerAngles *msg)
+      // {
+      //   roll = msg->phi;
+      //   pitch = msg->theta;
+      //   yaw = msg->psi;
+      // }
 
       void
       task(void)
@@ -231,14 +231,14 @@ namespace Simulators
         m_sstate.z = std::max(position[2], 0.0);
 
         // Fill attitude.
-        /* double *attitude = m_vehicle->getOrientation();
+        double *attitude = m_vehicle->getOrientation();
         m_sstate.phi = Angles::normalizeRadian(attitude[0]);
         m_sstate.theta = Angles::normalizeRadian(attitude[1]);
         m_sstate.psi = Angles::normalizeRadian(attitude[2]);
- */
-        m_sstate.phi = Angles::normalizeRadian(roll);
-        m_sstate.theta = Angles::normalizeRadian(pitch);
-        m_sstate.psi = Angles::normalizeRadian(yaw);
+
+        // m_sstate.phi = Angles::normalizeRadian(roll);
+        // m_sstate.theta = Angles::normalizeRadian(pitch);
+        // m_sstate.psi = Angles::normalizeRadian(yaw);
 
         // Fill angular velocity.
         double *av = m_vehicle->getAngularVelocity();
