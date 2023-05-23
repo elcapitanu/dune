@@ -75,6 +75,8 @@ namespace MiniASV
       int m_count_attempts;
       //! Flag to control reset of board
       bool m_is_first_reset;
+      //! Euler Angles message
+      IMC::EulerAngles m_eulerAngles;
 
       //! Constructor.
       //! @param[in] name task name.
@@ -143,7 +145,6 @@ namespace MiniASV
       void
       onResourceInitialization(void)
       {
-        m_driver->stopAcquisition();
         m_uart->flush();
         Delay::wait(1.0f);
         initBoard();
@@ -214,15 +215,12 @@ namespace MiniASV
       {
         m_tstamp = Clock::getSinceEpoch();
 
-        m_angles.setTimeStamp(m_tstamp);
-        m_angles.time = m_tstamp;
-        // to do: trim these values (these are in degrees, we need it in rad)
-        m_angles.phi = m_driver->m_miniASVData.roll;
-        m_angles.theta = m_driver->m_miniASVData.pitch;
-        m_angles.psi = m_driver->m_miniASVData.yaw;
-        m_angles.psi_magnetic = m_driver->m_miniASVData.yaw;
-
-        dispatch(m_angles, DF_KEEP_TIME);
+        m_eulerAngles.setTimeStamp(m_tstamp);
+        m_eulerAngles.phi = 0;
+        m_eulerAngles.theta = 0;
+        m_eulerAngles.psi = (m_driver->m_miniASVData.yaw)/Math::c_degrees_per_radian;
+        m_eulerAngles.psi_magnetic = (m_driver->m_miniASVData.yaw)/Math::c_degrees_per_radian;
+        dispatch(m_eulerAngles, DF_KEEP_TIME);
       }
 
       //! Main loop.
@@ -231,7 +229,7 @@ namespace MiniASV
       {
         while (!stopping())
         {
-          waitForMessages(1.0);
+          waitForMessages(0.01);
 
           if (m_wdog.overflow())
           {
@@ -241,14 +239,11 @@ namespace MiniASV
             initBoard();
           }
 
-          if (!Poll::poll(*m_uart, m_args.input_timeout))
-            continue;
+          if (Poll ::poll(*m_uart, m_args.input_timeout))
+            if (m_driver->haveNewData())
+              m_wdog.reset();
 
-          if (m_driver->haveNewData())
-          {
-            m_wdog.reset();
-            dispatchData();
-          }
+          dispatchData();
 
           std::string send;
           send = String::str("@PWM,R,%d,*", m_driver->m_miniASVData.pwmR);
@@ -257,6 +252,9 @@ namespace MiniASV
           m_driver->sendCommandNoRsp(send.c_str());
         }
 
+        Delay::wait(0.1);
+
+        m_uart->flush();
         m_driver->stopAcquisition();
       }
     };

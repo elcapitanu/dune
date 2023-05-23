@@ -43,6 +43,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstddef>
+#include <stdio.h>
 
 // DUNE headers.
 #include <DUNE/Config.hpp>
@@ -130,7 +131,7 @@ namespace DUNE
       static void
       displacement(Ta rlat, Ta rlon, Tb rhae,
                    Tc lat, Tc lon, Td hae,
-                   Te* n, Te* e, Te* d = NULL)
+                   Te *n, Te *e, Te *d = NULL)
       {
         double cs[6] = {0.0};
 
@@ -173,7 +174,7 @@ namespace DUNE
       template <typename Ta, typename Tb, typename Tc, typename Td>
       static void
       displace(Ta n, Ta e, Tb d,
-               Tc* lat, Tc* lon, Td* hae)
+               Tc *lat, Tc *lon, Td *hae)
       {
         // Convert reference to ECEF coordinates
         double x;
@@ -186,10 +187,10 @@ namespace DUNE
 #if defined(DUNE_ELLIPSOIDAL_DISPLACE)
         // Use elliptical coordinates
         double N = computeRn(*lat);
-        double phi = std::atan2(z,p*(1 - c_wgs84_e2 * N / (N + *hae)));
+        double phi = std::atan2(z, p * (1 - c_wgs84_e2 * N / (N + *hae)));
 #else
         // Use spherical coordinates
-        double phi = std::atan2(z,p);
+        double phi = std::atan2(z, p);
 #endif
 
         // Compute all needed sine and cosine terms for conversion.
@@ -220,7 +221,7 @@ namespace DUNE
       //!                longitude on exit (rad).
       template <typename Ta, typename Tb>
       static inline void
-      displace(Ta n, Ta e, Tb* lat, Tb* lon)
+      displace(Ta n, Ta e, Tb *lat, Tb *lon)
       {
         // Dummy variable
         double hae = 0.00;
@@ -242,7 +243,7 @@ namespace DUNE
       static inline void
       getNEBearingAndRange(Ta lat1, Ta lon1,
                            Ta lat2, Ta lon2,
-                           Tb* bearing, Tb* range)
+                           Tb *bearing, Tb *range)
       {
         double n, e;
         WGS84::displacement(lat1, lon1, 0, lat2, lon2, 0, &n, &e);
@@ -265,9 +266,9 @@ namespace DUNE
       static inline void
       getAzimuthAndElevation(Ta lat1, Ta lon1, Tb hei1,
                              Ta lat2, Ta lon2, Tb hei2,
-                             Tc* azimuth, Tc* elevation)
+                             Tc *azimuth, Tc *elevation)
       {
-        double latitudeArc  = lat1 - lat2;
+        double latitudeArc = lat1 - lat2;
         double longitudeArc = lon1 - lon2;
         double latitudeH = std::sin(latitudeArc * 0.5);
         latitudeH *= latitudeH;
@@ -303,7 +304,7 @@ namespace DUNE
       //! @param[out] z storage for ECEF z coordinate (m).
       template <typename Ta, typename Tb, typename Tc>
       static void
-      toECEF(Ta lat, Ta lon, Tb hae, Tc* x, Tc* y, Tc* z)
+      toECEF(Ta lat, Ta lon, Tb hae, Tc *x, Tc *y, Tc *z)
       {
         assert(x != 0);
         assert(y != 0);
@@ -330,7 +331,7 @@ namespace DUNE
       //! @param[out] hae height above WGS-84 ellipsoid (m).
       template <typename Ta, typename Tb, typename Tc, typename Td>
       static void
-      fromECEF(Ta x, Ta y, Tb z, Tc* lat, Tc* lon, Td* hae)
+      fromECEF(Ta x, Ta y, Tb z, Tc *lat, Tc *lon, Td *hae)
       {
         assert(lat != 0);
         assert(lon != 0);

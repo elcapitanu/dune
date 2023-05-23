@@ -53,9 +53,8 @@ namespace DUNE
     //! @param y Y coordinate
     //! @param angle pointer to output angle
     //! @param norm pointer to output norm
-    inline
-    void
-    toPolar(double x, double y, double* angle, double* norm)
+    inline void
+    toPolar(double x, double y, double *angle, double *norm)
     {
       *angle = std::atan2(y, x);
       *norm = std::sqrt(x * x + y * y);
@@ -67,7 +66,7 @@ namespace DUNE
     //! @param norm pointer to output norm
     template <typename A>
     inline void
-    toPolar(const A& coord, double* angle, double* norm)
+    toPolar(const A &coord, double *angle, double *norm)
     {
       toPolar(coord.x, coord.y, angle, norm);
     }
@@ -79,7 +78,7 @@ namespace DUNE
     //! @param range pointer to output range data
     template <typename A, typename B>
     inline void
-    getBearingAndRange(const A& origin, const B& point, double* bearing, double* range)
+    getBearingAndRange(const A &origin, const B &point, double *bearing, double *range)
     {
       toPolar(point.x - origin.x, point.y - origin.y, bearing, range);
     }
@@ -90,8 +89,9 @@ namespace DUNE
     //! @param range range
     template <typename A>
     void
-    displace(A& point, double bearing, double range)
+    displace(A &point, double bearing, double range)
     {
+      printf("I would love to know what is happening\n");
       point.x += range * std::cos(bearing);
       point.y += range * std::sin(bearing);
     }
@@ -103,10 +103,10 @@ namespace DUNE
     //! @param point output point
     template <typename A, typename B>
     void
-    setBearingAndRange(const A& origin, double bearing, double range, B& point)
+    setBearingAndRange(const A &origin, double bearing, double range, B &point)
     {
-      point.x = origin.x + range* std::cos(bearing);
-      point.y = origin.y + range* std::sin(bearing);
+      point.x = origin.x + range * std::cos(bearing);
+      point.y = origin.y + range * std::sin(bearing);
     }
 
     //! Get range between two points.
@@ -115,7 +115,7 @@ namespace DUNE
     //! @return bearing from origin to point
     template <typename A, typename B>
     double
-    getRange(const A& a, const B& b)
+    getRange(const A &a, const B &b)
     {
       double dx = b.x - a.x, dy = b.y - a.y;
       return std::sqrt(dx * dx + dy * dy);
@@ -127,7 +127,7 @@ namespace DUNE
     //! @return bearing from origin to point
     template <typename A, typename B>
     double
-    getBearing(const A& origin, const B& point)
+    getBearing(const A &origin, const B &point)
     {
       return std::atan2(point.y - origin.y, point.x - origin.x);
     }
@@ -141,10 +141,12 @@ namespace DUNE
     //! @param y optional cross-track position on exit
     template <typename A, typename B>
     void
-    getTrackPosition(const A& origin, double orientation, const B& point, double* x, double* y = nullptr)
+    getTrackPosition(const A &origin, double orientation, const B &point, double *x, double *y = nullptr)
     {
-      double b, r;
 
+      // std::printf("x: %lf, y: %lf\n", *x, *y);
+      double b, r;
+      // printf("Hmmm how much is this called?\n");
       getBearingAndRange(origin, point, &b, &r);
       b -= orientation;
 
@@ -162,7 +164,7 @@ namespace DUNE
     sphericalToCartesian(double r, double az, double el)
     {
       double a = r * std::cos(el);
-      double rv[] = {a* std::cos(az), a * std::sin(az), r * std::sin(el)};
+      double rv[] = {a * std::cos(az), a * std::sin(az), r * std::sin(el)};
 
       return Math::Matrix(rv, 3, 1);
     }
@@ -173,14 +175,14 @@ namespace DUNE
     //! @param[out] lon WGS84 longitude.
     //! @param[out] hae height above WGS84 ellipsoid.
     void
-    toWGS84(const IMC::EstimatedState& estate, double& lat, double& lon, float& hae);
+    toWGS84(const IMC::EstimatedState &estate, double &lat, double &lon, float &hae);
 
     //! Convert the position in an estimated state message to WGS84 coordinates.
     //! @param[in] estate estimated state message.
     //! @param[out] lat WGS84 latitude.
     //! @param[out] lon WGS84 longitude.
     void
-    toWGS84(const IMC::EstimatedState& estate, double& lat, double& lon);
+    toWGS84(const IMC::EstimatedState &estate, double &lat, double &lon);
 
     //! Convert the position in a simulated state message to WGS84 coordinates.
     //! @param[in] estate simulated state message.
@@ -188,14 +190,14 @@ namespace DUNE
     //! @param[out] lon WGS84 longitude.
     //! @param[out] hae height above WGS84 ellipsoid.
     void
-    toWGS84(const IMC::SimulatedState& estate, double& lat, double& lon, float& hae);
+    toWGS84(const IMC::SimulatedState &estate, double &lat, double &lon, float &hae);
 
     //! Convert the position in a simulated state message to WGS84 coordinates.
     //! @param[in] estate simulated state message.
     //! @param[out] lat WGS84 latitude.
     //! @param[out] lon WGS84 longitude.
     void
-    toWGS84(const IMC::SimulatedState& estate, double& lat, double& lon);
+    toWGS84(const IMC::SimulatedState &estate, double &lat, double &lon);
 
     //! Convert latitude to the format used in NMEA sentences.
     //! @param latitude latitude in radian.
@@ -213,13 +215,13 @@ namespace DUNE
     //! @param[in] str NMEA formatted latitude.
     //! @return latitude in radians.
     double
-    NMEAToLatitude(const std::string& str);
+    NMEAToLatitude(const std::string &str);
 
     //! Convert NMEA longitude to longitude in radians.
     //! @param[in] str NMEA formatted longitude.
     //! @return longitude in radians.
     double
-    NMEAToLongitude(const std::string& str);
+    NMEAToLongitude(const std::string &str);
   }
 }
 
