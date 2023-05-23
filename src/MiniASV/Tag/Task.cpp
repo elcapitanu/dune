@@ -30,17 +30,14 @@
 // DUNE headers.
 #include <DUNE/DUNE.hpp>
 
-// Local headers
-#include "Driver.hpp"
-
 namespace MiniASV
 {
-  namespace SerialComms
+  //! Insert short task description here.
+  //!
+  //! Insert explanation on task behaviour here.
+  //! @author Bernardo Gabriel
+  namespace Tag
   {
-    //! Insert short task description here.
-    //!
-    //! Insert explanation on task behaviour here.
-    //! @author Bernardo Gabriel
     using DUNE_NAMESPACES;
 
     struct Arguments
@@ -63,28 +60,25 @@ namespace MiniASV
       Poll m_poll;
       //! Task arguments
       Arguments m_args;
-      //! Driver for CrawlerSerial
-      DriverMiniASV *m_driver;
       //! Timer
       Counter<double> m_wdog;
       //! IMC msg
-      IMC::EulerAngles m_angles;
+      IMC::DeviceState m_position;
       //! Read timestamp.
       double m_tstamp;
-      //! Count for attempts
-      int m_count_attempts;
-      //! Flag to control reset of board
-      bool m_is_first_reset;
-      //! Euler Angles message
-      IMC::EulerAngles m_eulerAngles;
+      //! Distances
+      float m_distance1 = 0;
+      float m_distance2 = 0;
+      //! Position
+      float m_x;
+      float m_y;
+
+      char bfr[128];
 
       //! Constructor.
       //! @param[in] name task name.
       //! @param[in] ctx context.
-      Task(const std::string &name, Tasks::Context &ctx) : DUNE::Tasks::Task(name, ctx),
-                                                           m_uart(NULL),
-                                                           m_driver(0),
-                                                           m_tstamp(0)
+      Task(const std::string &name, Tasks::Context &ctx) : DUNE::Tasks::Task(name, ctx)
       {
         param("Serial Port - Device", m_args.uart_dev)
             .defaultValue("")
@@ -100,8 +94,6 @@ namespace MiniASV
             .maximumValue("4.0")
             .units(Units::Second)
             .description("Amount of seconds to wait for data before reporting an error");
-
-        bind<IMC::SetThrusterActuation>(this);
       }
 
       //! Update internal state with new parameter values.
@@ -133,7 +125,6 @@ namespace MiniASV
           m_uart->setCanonicalInput(true);
           m_uart->flush();
           m_poll.add(*m_uart);
-          m_driver = new DriverMiniASV(this, m_uart, m_poll);
         }
         catch (const std::runtime_error &e)
         {
@@ -147,7 +138,6 @@ namespace MiniASV
       {
         m_uart->flush();
         Delay::wait(1.0f);
-        initBoard();
         m_wdog.setTop(m_args.input_timeout);
         m_wdog.reset();
       }
@@ -156,71 +146,58 @@ namespace MiniASV
       void
       onResourceRelease(void)
       {
-        if (m_uart != nullptr)
-        {
-          m_poll.remove(*m_uart);
-          Memory::clear(m_driver);
-          Memory::clear(m_uart);
-        }
+        /* if (m_uart != nullptr)
+          {
+            m_poll.remove(*m_uart);
+            Memory::clear(m_uart);
+          } */
       }
 
-      void
-      initBoard()
-      {
-        m_driver->stopAcquisition();
-
-        if (!m_driver->getVersionFirmware())
-        {
-          setEntityState(IMC::EntityState::ESTA_NORMAL, Utils::String::str(DTR("trying connecting to board")));
-          war(DTR("failed to get firmware version"));
-        }
-
-        if (!m_driver->startAcquisition())
-        {
-          setEntityState(IMC::EntityState::ESTA_NORMAL, Utils::String::str(DTR("trying connecting to board")));
-          war(DTR("failed to start"));
-        }
-
-        debug("Init OK");
-        m_wdog.setTop(m_args.input_timeout);
-        m_wdog.reset();
-      }
-
-      void
-      consume(const IMC::SetThrusterActuation *msg)
-      {
-        /* if (msg->getDestination() != getSystemId())
-          return; */
-
-        if (msg->id == 0)
-        {
-          m_driver->m_miniASVData.pwmR = static_cast<int>(msg->getValueFP() * 25);
-          if (m_driver->m_miniASVData.pwmR > 30)
-            m_driver->m_miniASVData.pwmR = 30;
-          if (m_driver->m_miniASVData.pwmR < -30)
-            m_driver->m_miniASVData.pwmR = -30;
-        }
-        else if (msg->id == 1)
-        {
-          m_driver->m_miniASVData.pwmL = static_cast<int>(msg->getValueFP() * 25);
-          if (m_driver->m_miniASVData.pwmL > 30)
-            m_driver->m_miniASVData.pwmL = 30;
-          if (m_driver->m_miniASVData.pwmL < -30)
-            m_driver->m_miniASVData.pwmL = -30;
-        }
-      }
-
-      void
-      dispatchData()
+      void dispatchData()
       {
         m_tstamp = Clock::getSinceEpoch();
+        m_position.setTimeStamp(m_tstamp);
+        m_position.x = m_x;
+        m_position.y = m_y;
+        m_position.z = 0;
+        dispatch(m_position, DF_KEEP_TIME);
+      }
 
-        m_eulerAngles.setTimeStamp(m_tstamp);
-        m_eulerAngles.phi = 0;
-        m_eulerAngles.theta = 0;
-        m_eulerAngles.psi = (m_driver->m_miniASVData.yaw)/Math::c_degrees_per_radian;
-        m_eulerAngles.psi_magnetic = (m_driver->m_miniASVData.yaw)/Math::c_degrees_per_radian;
-        dispatch(m_eulerAngles, DF_KEEP_TIME);
+      bool
+      haveNewData()
+      {
+        std::size_t rv = m_uart->readString(bfr, sizeof(bfr));
+
+        if (rv == 0)
+        {
+          err(DTR("I/O error"));
+          return false;
+        }
+
+        bfr[strlen(bfr) - 3] = '\0';
+
+        char *param = std::strtok(bfr, ",");
+
+        if (!strcmp(param, "$DIST"))
+        {
+          param = std::strtok(NULL, ",");
+          m_distance1 = atof(param);
+          param = std::strtok(NULL, ",");
+          m_distance2 = atof(param);
+
+
+          // anchors pos: (0,0) and (1,0)
+          m_x = (pow(m_distance1, 2) + pow(1, 2) - pow(m_distance2, 2)) / 2;
+          m_y = sqrt(pow(m_distance1, 2) - pow(m_x, 2));
+
+          inf("Estimated Vehicle Position: (%.3f, %.3f)", m_x, m_y);
+        }
+
+        bfr[0] = '\0';
+
+        m_uart->flush();
+
+        return true;
       }
 
       //! Main loop.
@@ -229,35 +206,14 @@ namespace MiniASV
       {
         while (!stopping())
         {
-          waitForMessages(0.01);
+          waitForMessages(0.1);
 
-          if (m_wdog.overflow())
-          {
-            inf("Timer overflow");
-            throw RestartNeeded(DTR(Status::getString(CODE_COM_ERROR)), 10);
-            m_uart->flush();
-            initBoard();
-          }
-
-          if (Poll ::poll(*m_uart, m_args.input_timeout))
-            if (m_driver->haveNewData())
-              m_wdog.reset();
-
-          dispatchData();
-
-          std::string send;
-          send = String::str("@PWM,R,%d,*", m_driver->m_miniASVData.pwmR);
-          m_driver->sendCommandNoRsp(send.c_str());
-          send = String::str("@PWM,L,%d,*", m_driver->m_miniASVData.pwmL);
-          m_driver->sendCommandNoRsp(send.c_str());
+          if (haveNewData())
+            dispatchData();
         }
-
-        Delay::wait(0.1);
-
-        m_uart->flush();
-        m_driver->stopAcquisition();
       }
     };
   }
 }
+
 DUNE_TASK
