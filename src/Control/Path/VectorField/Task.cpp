@@ -163,8 +163,8 @@ namespace Control
           double ref = 0; // Radians of vector
 
           // for testing
-          double obs_x = 12.5;
-          double obs_y = 3;
+          double obs_x = 25;
+          double obs_y = 25;
 
           double in_radius = 3.5, out_radius = 5;
           double x_pos, y_pos;
@@ -200,22 +200,22 @@ namespace Control
           aux_y = y_pos - obs_y;
 
           // Doesn't have space to go because of the wall
-          if ((obs_y - out_radius) <= 1 || (out_radius + obs_y) >= 24)
-          {
-            out_radius = out_radius - 1 - abs(obs_y - out_radius);
-            in_radius = 1.1;
-          }
-          else if ((obs_x - out_radius) <= 1 || (out_radius + obs_x) >= 24)
-          {
-            out_radius = out_radius - 1 - abs(obs_x - out_radius);
-            in_radius = 1.1;
-          }
+          // if ((obs_y - out_radius) <= 1 || (out_radius + obs_y) >= 24)
+          // {
+          //   out_radius = out_radius - 1 - abs(obs_y - out_radius);
+          //   in_radius = 1.1;
+          // }
+          // else if ((obs_x - out_radius) <= 1 || (out_radius + obs_x) >= 24)
+          // {
+          //   out_radius = out_radius - 1 - abs(obs_x - out_radius);
+          //   in_radius = 1.1;
+          // }
 
-          if (out_radius < in_radius)
-          {
-            out_radius = 2.5;
-            inf("AHHHH MERDEI, ERRO ENTRE PAREDE E OBSTACULO");
-          }
+          // if (out_radius < in_radius)
+          // {
+          //   out_radius = 2.5;
+          //   inf("AHHHH MERDEI, ERRO ENTRE PAREDE E OBSTACULO");
+          // }
 
           if (ts.track_pos.x > ts.track_length)
           {
@@ -238,40 +238,45 @@ namespace Control
             ref += ts.track_bearing;
           }
 
+          double old_ref = ref;
+
           // Inside out radius, change bearing to tan of radius
           if (leaving_angle <= DUNE::Math::Angles::radians(-90) || leaving_angle >= DUNE::Math::Angles::radians(90)) // entrou aqui quando devia
           {
             if (in_abs < out_radius)
             {
               ref = std::atan2(aux_y, aux_x);
-              inf("out radius initial: %.2f", Angles::degrees(Angles::normalizeRadian(ref)));
-              // if (laranja)
-              // {
-              //   ref -= DUNE::Math::Angles::radians(90) - DUNE::Math::Angles::radians(10);
-              // }
-              // else
-              // {
-              //   ref += DUNE::Math::Angles::radians(90) + DUNE::Math::Angles::radians(10);
-              // }
 
-              // Works with this <3
-              if (leaving_angle > DUNE::Math::Angles::radians(90))
+              if (in_abs >= in_radius)
               {
-                ref -= DUNE::Math::Angles::radians(90) - DUNE::Math::Angles::radians(10); // Extra value to make ti a little more agressive
+                inf("out radius initial: %.2f", Angles::degrees(Angles::normalizeRadian(ref)));
+                if (laranja)
+                {
+                  ref -= DUNE::Math::Angles::radians(90) - DUNE::Math::Angles::radians(10);
+                }
+                else
+                {
+                  ref += DUNE::Math::Angles::radians(90) + DUNE::Math::Angles::radians(10);
+                }
+
+                //   // Works with this <3
+                //   if (leaving_angle > DUNE::Math::Angles::radians(90))
+                //   {
+                //     ref -= DUNE::Math::Angles::radians(90) - DUNE::Math::Angles::radians(10); // Extra value to make ti a little more agressive
+                //   }
+                //   else
+                //   {
+                //     ref += DUNE::Math::Angles::radians(90) + DUNE::Math::Angles::radians(10); // Extra value to make ti a little more agressive
+                //   }
+                //   inf("out radius final: %.2f", Angles::degrees(Angles::normalizeRadian(ref)));
               }
               else
               {
-                ref += DUNE::Math::Angles::radians(90) + DUNE::Math::Angles::radians(10); // Extra value to make ti a little more agressive
+                inf("Inside Radius overwrite: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
               }
-              inf("out radius final: %.2f", Angles::degrees(Angles::normalizeRadian(ref)));
             }
 
             // Inside inner circle, go all the way backwards
-            if (in_abs < in_radius)
-            {
-              ref = std::atan2(aux_y, aux_x);
-              inf("Inside Radius overwrite: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
-            }
           }
 
           // Stay away from the pool wall
