@@ -168,129 +168,127 @@ namespace Navigation
         bool speed_relation_Limit;
         //!  Value RPM to m/s limit on estimation
         double speed_relation_limit_value;
-        //!  Distance of Depth sensor to the veicle pitch rotation axis 
+        //!  Distance of Depth sensor to the veicle pitch rotation axis
         float distance_depth_sensor;
-
       };
 
-      struct Task: public DUNE::Navigation::BasicNavigation
+      struct Task : public DUNE::Navigation::BasicNavigation
       {
         //! Periodic GPS fix reading check.
         bool m_gps_reading;
         //! USBL fix reading check.
         bool m_usbl_reading;
         //! Moving average for vehicle forward speed.
-        MovingAverage<double>* m_avg_speed;
+        MovingAverage<double> *m_avg_speed;
         //! Task arguments.
         Arguments m_args;
         //! Heading alignment buffer
         int m_heading_buffer;
         //! Pointer to speed model for speed conversions
-        const Plans::SpeedModel* m_speed_model;
+        const Plans::SpeedModel *m_speed_model;
 
-        Task(const std::string& name, Tasks::Context& ctx):
-          DUNE::Navigation::BasicNavigation(name, ctx),
-          m_avg_speed(nullptr),
-          m_heading_buffer(0),
-          m_speed_model(nullptr)
+        Task(const std::string &name, Tasks::Context &ctx) : DUNE::Navigation::BasicNavigation(name, ctx),
+                                                             m_avg_speed(nullptr),
+                                                             m_heading_buffer(0),
+                                                             m_speed_model(nullptr)
         {
           // Declare configuration parameters.
           param("Position Noise Covariance with IMU", m_args.pos_noise)
-          .defaultValue("0.0")
-          .minimumValue("0.0")
-          .description("Position process noise covariance value when IMU is available");
+              .defaultValue("0.0")
+              .minimumValue("0.0")
+              .description("Position process noise covariance value when IMU is available");
 
           param("LBL Noise Covariance with IMU", m_args.lbl_noise)
-          .defaultValue("0.1")
-          .minimumValue("0.0")
-          .description("LBL measurement noise covariance value when IMU is available");
+              .defaultValue("0.1")
+              .minimumValue("0.0")
+              .description("LBL measurement noise covariance value when IMU is available");
 
           param("Process Noise Covariance", m_process_noise)
-          .defaultValue("")
-          .size(6)
-          .description("Kalman Filter process noise covariance values");
+              .defaultValue("")
+              .size(6)
+              .description("Kalman Filter process noise covariance values");
 
           param("GPS Noise Covariance", m_args.gps_noise)
-          .defaultValue("")
-          .size(4)
-          .description("Kalman Filter GPS noise covariance values");
+              .defaultValue("")
+              .size(4)
+              .description("Kalman Filter GPS noise covariance values");
 
           param("USBL Noise Covariance", m_args.usbl_noise)
-          .defaultValue("100.0")
-          .minimumValue("0.0")
-          .description("Kalman Filter USBL noise covariance value");
+              .defaultValue("100.0")
+              .minimumValue("0.0")
+              .description("Kalman Filter USBL noise covariance value");
 
           param("Measure Noise Covariance", m_measure_noise)
-          .defaultValue("")
-          .size(5)
-          .description("Kalman Filter measurement noise covariance values");
+              .defaultValue("")
+              .size(5)
+              .description("Kalman Filter measurement noise covariance values");
 
           param("State Covariance Initial State", m_state_cov)
-          .defaultValue("")
-          .size(5)
-          .description("Kalman Filter State Covariance initial values");
+              .defaultValue("")
+              .size(5)
+              .description("Kalman Filter State Covariance initial values");
 
           param("Speed Moving Average Samples", m_args.navg_speed)
-          .defaultValue("10")
-          .minimumValue("5")
-          .maximumValue("20")
-          .description("Number of moving average samples to smooth forward speed");
+              .defaultValue("10")
+              .minimumValue("5")
+              .maximumValue("20")
+              .description("Number of moving average samples to smooth forward speed");
 
           param("Revolutions to speed factor", m_args.rpm_ini)
-          .defaultValue("1.2e-3")
-          .minimumValue("0.8e-3")
-          .maximumValue("2.0e-3")
-          .description("Kalman Filter initial revolutions to speed factor value");
+              .defaultValue("1.2e-3")
+              .minimumValue("0.8e-3")
+              .maximumValue("2.0e-3")
+              .description("Kalman Filter initial revolutions to speed factor value");
 
           param("Revolutions to speed variation", m_args.rpm_max)
-          .defaultValue("6e-4")
-          .minimumValue("4e-4")
-          .maximumValue("8e-4")
-          .description("Kalman Filter revolutions to speed maximum allowed variation");
+              .defaultValue("6e-4")
+              .minimumValue("4e-4")
+              .maximumValue("8e-4")
+              .description("Kalman Filter revolutions to speed maximum allowed variation");
 
           param("Abort if Uncertainty Exceeded", m_args.abort)
-          .defaultValue("true")
-          .description("Abort if position uncertainty is exceeded");
+              .defaultValue("true")
+              .description("Abort if position uncertainty is exceeded");
 
           param("Heading Bias Alignment Index", m_args.alignment_index)
-          .defaultValue("1e-5")
-          .minimumValue("1e-6")
-          .maximumValue("1e-4")
-          .description("Heading bias uncertainty alignment threshold");
+              .defaultValue("1e-5")
+              .minimumValue("1e-6")
+              .maximumValue("1e-4")
+              .description("Heading bias uncertainty alignment threshold");
 
           param("Heading alignment sensor diff", m_args.alignment_diff)
-          .defaultValue("15")
-          .minimumValue("1")
-          .maximumValue("180")
-          .description("Heading alignment sensor diff threshold");
+              .defaultValue("15")
+              .minimumValue("1")
+              .maximumValue("180")
+              .description("Heading alignment sensor diff threshold");
 
           param("Heading buffer value", m_args.heading_buffer_value)
-          .defaultValue("200")
-          .minimumValue("1")
-          .description("Heading buffer value - how many repetitions to aligned");
+              .defaultValue("200")
+              .minimumValue("1")
+              .description("Heading buffer value - how many repetitions to aligned");
 
           param("Entity Label - IMU", m_args.elabel_imu)
-          .description("Entity label of the IMU");
+              .description("Entity label of the IMU");
 
           param("Depth sensor localization in x axis", m_args.distance_depth_sensor)
-          .defaultValue("0.0")
-          .minimumValue("0.0")
-          .maximumValue("2.0")
-          .description("Depth sensor localization in x axis in meters- used for depth correction due to pitch");
+              .defaultValue("0.0")
+              .minimumValue("0.0")
+              .maximumValue("2.0")
+              .description("Depth sensor localization in x axis in meters- used for depth correction due to pitch");
 
           param("Rpm to speed estimation", m_args.rpm_estimation)
-          .defaultValue("true")
-          .description("");
+              .defaultValue("true")
+              .description("");
 
           param("Activate speed to rpm estimation limit", m_args.speed_relation_Limit)
-          .defaultValue("false")
-          .description("");
+              .defaultValue("false")
+              .description("");
 
           param("speed to rpm estimation percentage limit", m_args.speed_relation_limit_value)
-          .defaultValue("15")
-          .minimumValue("1")
-          .maximumValue("100")
-          .description("speed to rpm maximum diference between estimation and speed model");
+              .defaultValue("15")
+              .minimumValue("1")
+              .maximumValue("100")
+              .description("speed to rpm maximum diference between estimation and speed model");
 
           // Extended Kalman Filter initialization.
           m_kal.reset(NUM_STATE, NUM_OUT);
@@ -383,7 +381,7 @@ namespace Navigation
         }
 
         void
-        consume(const IMC::EntityActivationState* msg)
+        consume(const IMC::EntityActivationState *msg)
         {
           if (msg->getSource() != getSystemId())
             return;
@@ -537,7 +535,7 @@ namespace Navigation
         }
 
         void
-        getSpeedOutputStates(unsigned* u, unsigned* v)
+        getSpeedOutputStates(unsigned *u, unsigned *v)
         {
           *u = OUT_U;
           *v = OUT_V;
@@ -552,7 +550,7 @@ namespace Navigation
         void
         task(void)
         {
-          if(!BasicNavigation::isActive())
+          if (!BasicNavigation::isActive())
             return;
 
           // Compute time delta.
@@ -574,10 +572,8 @@ namespace Navigation
           // Modify covariance state transition matrix.
           double yaw = m_kal.getState(STATE_PSI);
 
-          a(STATE_X, STATE_PSI) = (- x(STATE_U) * std::sin(yaw)
-                                   - x(STATE_V) * std::cos(yaw));
-          a(STATE_Y, STATE_PSI) = (x(STATE_U) * std::cos(yaw)
-                                   - x(STATE_V) * std::sin(yaw));
+          a(STATE_X, STATE_PSI) = (-x(STATE_U) * std::sin(yaw) - x(STATE_V) * std::cos(yaw));
+          a(STATE_Y, STATE_PSI) = (x(STATE_U) * std::cos(yaw) - x(STATE_V) * std::sin(yaw));
 
           m_kal.setCovarianceTransition((a * tstep).expmts());
 
@@ -598,7 +594,7 @@ namespace Navigation
           m_kal.setInnovation(OUT_PSI, m_kal.getOutput(OUT_PSI) - getBiasedHeading());
 
           double r = m_kal.getState(STATE_R) + m_kal.getState(STATE_R_BIAS);
-          m_kal.setInnovation(OUT_R,  m_kal.getOutput(OUT_R) - r);
+          m_kal.setInnovation(OUT_R, m_kal.getOutput(OUT_R) - r);
 
           // GPS innovation matrix.
           if (m_gps_reading || m_usbl_reading)
@@ -626,13 +622,13 @@ namespace Navigation
           else if (m_time_without_gps.overflow() && m_time_without_dvl.overflow())
           {
             double u = 0.0;
-            double speed_m  = getRpmToMs(m_rpm);
-            if(m_args.rpm_estimation)
+            double speed_m = getRpmToMs(m_rpm);
+            if (m_args.rpm_estimation)
             {
               u = m_rpm * m_kal.getState(STATE_K) * std::cos(getEuler(AXIS_Y));
-              if(m_args.speed_relation_Limit)
+              if (m_args.speed_relation_Limit)
               {
-                double speedR = (std::abs(u) - std::abs(speed_m))/ std::abs(speed_m) * 100;
+                double speedR = (std::abs(u) - std::abs(speed_m)) / std::abs(speed_m) * 100;
                 if (speedR > m_args.speed_relation_limit_value)
                   u = speed_m;
               }
@@ -659,7 +655,6 @@ namespace Navigation
             }
           }
 
-
           // Do not estimate bias using LBL fixes.
           double bias = m_kal.getCovariance(STATE_PSI_BIAS);
           if (m_lbl_reading)
@@ -683,14 +678,12 @@ namespace Navigation
           m_kal.setState(STATE_K, k_lim);
 
           // Check alignment threshold index.
-          double diff_psi = std::abs(Angles::normalizeRadian(Angles::normalizeRadian(m_kal.getState(STATE_PSI))
-                                                             - Angles::normalizeRadian(getEuler(AXIS_Z)) ) );
-
+          double diff_psi = std::abs(Angles::normalizeRadian(Angles::normalizeRadian(m_kal.getState(STATE_PSI)) - Angles::normalizeRadian(getEuler(AXIS_Z))));
 
           if (m_dead_reckoning)
           {
             if (m_kal.getCovariance(STATE_PSI_BIAS) < m_args.alignment_index &&
-                diff_psi < Angles::normalizeRadian(Angles::radians(m_args.alignment_diff)) )
+                diff_psi < Angles::normalizeRadian(Angles::radians(m_args.alignment_diff)))
             {
               m_aligned = true;
               m_heading_buffer = 0;
@@ -704,8 +697,8 @@ namespace Navigation
                 {
                   sendDeActiveIMU();
                   war(DTR("navigation not aligned - Automatic IMU poweroff"));
-                  m_aligned  = false;
-                  m_heading_buffer=0;
+                  m_aligned = false;
+                  m_heading_buffer = 0;
                 }
               }
             }
@@ -732,13 +725,13 @@ namespace Navigation
           p.name = "Active";
           p.value = "false";
           IMC::SetEntityParameters msg;
-          msg.name = m_args.elabel_imu ;
+          msg.name = m_args.elabel_imu;
           msg.params.push_back(p);
           dispatch(msg);
         }
 
         void
-        startSpeedModel(Parsers::Config* config)
+        startSpeedModel(Parsers::Config *config)
         {
           try
           {
@@ -763,7 +756,7 @@ namespace Navigation
 
         // Reinitialize Extended Kalman Filter transition matrix function.
         void
-        setTransition(Matrix& A)
+        setTransition(Matrix &A)
         {
           A.fill(0.0);
 
@@ -782,11 +775,9 @@ namespace Navigation
           else
           {
             A(STATE_X, STATE_U) = std::cos(yaw) * std::cos(theta);
-            A(STATE_X, STATE_V) = (std::cos(yaw) * std::sin(theta) * std::sin(phi)
-                                   - std::sin(yaw) * std::cos(phi));
+            A(STATE_X, STATE_V) = (std::cos(yaw) * std::sin(theta) * std::sin(phi) - std::sin(yaw) * std::cos(phi));
             A(STATE_Y, STATE_U) = std::sin(yaw) * std::cos(theta);
-            A(STATE_Y, STATE_V) = (std::sin(yaw) * std::sin(theta) * std::sin(phi)
-                                   + std::cos(yaw) * std::cos(phi));
+            A(STATE_Y, STATE_V) = (std::sin(yaw) * std::sin(theta) * std::sin(phi) + std::cos(yaw) * std::cos(phi));
           }
         }
 
@@ -825,8 +816,7 @@ namespace Navigation
           m_uncertainty.v = m_kal.getCovariance(STATE_V);
 
           // Log Navigation Data.
-          m_navdata.cog = (std::abs(m_kal.getState(STATE_U)) > 0.2 ?
-                           std::atan2(m_estate.vy, m_estate.vx) : 0);
+          m_navdata.cog = (std::abs(m_kal.getState(STATE_U)) > 0.2 ? std::atan2(m_estate.vy, m_estate.vx) : 0);
           m_navdata.bias_psi = m_kal.getState(STATE_PSI_BIAS);
           m_navdata.bias_r = m_kal.getState(STATE_R_BIAS);
 

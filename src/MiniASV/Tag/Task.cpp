@@ -75,6 +75,7 @@ namespace MiniASV
       float m_distance2 = 0;
       //! Position
       float m_x;
+      float i = 0;
       float m_y;
 
       char bfr[128];
@@ -129,11 +130,12 @@ namespace MiniASV
       void
       onResourceAcquisition(void)
       {
+
         setEntityState(IMC::EntityState::ESTA_BOOT, Status::CODE_INIT);
         try
         {
           m_uart = new SerialPort(m_args.uart_dev, m_args.uart_baud);
-          m_uart->setCanonicalInput(true);
+          m_uart->setCanonicalInput(true); // waits for terminator caharacter
           m_uart->flush();
           m_poll.add(*m_uart);
         }
@@ -151,6 +153,8 @@ namespace MiniASV
         Delay::wait(1.0f);
         m_wdog.setTop(m_args.input_timeout);
         m_wdog.reset();
+
+        setEntityState(IMC::EntityState::ESTA_NORMAL, Status::CODE_ACTIVE);
       }
 
       //! Release resources.
@@ -178,24 +182,21 @@ namespace MiniASV
 
       void dispatchData()
       {
-        m_gps.setSource(60000);
-
-        m_gps.type = IMC::GpsFix::GFT_MANUAL_INPUT;
+        // m_gps.type = IMC::GpsFix::GFT_MANUAL_INPUT;
 
         m_tstamp = Clock::getSinceEpoch();
         m_gps.setTimeStamp(m_tstamp);
         m_gps.lat = x_pos_to_latitude(m_x);
         m_gps.lon = y_pos_to_longitude(m_y);
-        m_gps.validity |= IMC::GpsFix::GFV_VALID_POS;
+        m_gps.lat = Angles::radians(m_gps.lat);
+        m_gps.lon = Angles::radians(m_gps.lon);
 
+        // m_gps.lat = Angles::radians(41.18529547);
+        // m_gps.lon = Angles::radians(-8.7080671);
+
+        m_gps.validity = IMC::GpsFix::GFV_VALID_POS;
         dispatch(m_gps, DF_KEEP_TIME);
-
-        // m_position.setTimeStamp(m_tstamp);
-
-        // m_position.x = x_pos_to_latitude(m_x);
-        // m_position.y = y_pos_to_longitude(m_y);
-        // m_position.z = 0;
-        // dispatch(m_position, DF_KEEP_TIME);
+        inf("TAG:(x, y) || (lat, lon) = %.2f, %.2f || %.2f, %.2f", m_x, m_y, m_gps.lat, m_gps.lon);
       }
 
       bool
@@ -226,11 +227,12 @@ namespace MiniASV
             m_distance2 += 0.01;
           }
 
+          inf("d1: %.3f, d2: %.3f", m_distance1, m_distance2);
+
           // anchors pos: (0,0) and (m_args.dist_anchors,0)
           m_x = (pow(m_distance1, 2) + pow(m_args.dist_anchors, 2) - pow(m_distance2, 2)) / (2 * m_args.dist_anchors);
-          m_y = sqrt(pow(m_distance1, 2) - pow(m_x, 2));
 
-          inf("Estimated Vehicle Position: (%.3f, %.3f)", m_x, m_y);
+          m_y = sqrt(pow(m_distance1, 2) - pow(m_x, 2));
         }
 
         bfr[0] = '\0';
@@ -248,10 +250,8 @@ namespace MiniASV
         {
           waitForMessages(0.1);
 
-          haveNewData();
-
-          /* if (haveNewData())
-            dispatchData(); */
+          if (haveNewData())
+            dispatchData();
         }
       }
     };
