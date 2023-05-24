@@ -129,8 +129,6 @@ namespace Control
         {
           inf("Received lbl");
           obs.add_obstacle(est->x, est->y);
-          obs.add_obstacle(18, 12);
-
           inf("After lbl (x, y) = %.2f, %.2f", obs.pos[0][0], obs.pos[0][1]);
         }
 
@@ -159,21 +157,6 @@ namespace Control
         {
           return (lon + 8.70836583) * (25 - 0) / (-8.7080671 + 8.70836583) + 0;
         }
-
-        /**
-         * Collums y:
-         * 1 -> 2.49
-         * 2 -> 7.46
-         * 3 -> 12.40
-         * 4 ->
-         *
-         */
-
-        /**
-         * Rows above:
-         * 1 -> 23.28
-         * 2 -> 3.08
-         */
 
         //! Execute a path control step
         //! From base class PathController
@@ -213,7 +196,7 @@ namespace Control
 
           double in_abs = sqrt(pow(in_x, 2) + pow(in_y, 2));
 
-          // inf("Pos(X, Y): %.2f, %.2f -> ABS: %.2f", x_pos, y_pos, in_abs);
+          inf("Pos(X, Y): %.2f, %.2f -> ABS: %.2f", x_pos, y_pos, in_abs);
 
           double x_final = x_pos + ts.range * cos(ts.los_angle);
           double y_final = y_pos + ts.range * sin(ts.los_angle);
@@ -228,6 +211,10 @@ namespace Control
 
           aux_x = x_pos - obs_x;
           aux_y = y_pos - obs_y;
+
+          // Check for the closest object
+          double aux_y = obs.pos[0][0];
+          double aux_x = obs.pos[0][1];
 
           // for (int i = 0; i < obs.MAX_MACRO[0]; i++)
           // {
@@ -274,8 +261,7 @@ namespace Control
 
           double old_ref = ref;
 
-          // FIXME: probably change these values with new heading and speed
-          //  Inside out radius, change bearing to tan of radius
+          // Inside out radius, change bearing to tan of radius
           if (leaving_angle <= DUNE::Math::Angles::radians(-90) || leaving_angle >= DUNE::Math::Angles::radians(90)) // entrou aqui quando devia
           {
             if (in_abs < out_radius)
@@ -287,11 +273,11 @@ namespace Control
                 inf("out radius initial: %.2f", Angles::degrees(Angles::normalizeRadian(ref)));
                 if (laranja)
                 {
-                  ref -= DUNE::Math::Angles::radians(90); //- DUNE::Math::Angles::radians(10);
+                  ref -= DUNE::Math::Angles::radians(90) - DUNE::Math::Angles::radians(10);
                 }
                 else
                 {
-                  ref += DUNE::Math::Angles::radians(90); // + DUNE::Math::Angles::radians(10);
+                  ref += DUNE::Math::Angles::radians(90) + DUNE::Math::Angles::radians(10);
                 }
 
                 //   // Works with this <3
@@ -308,9 +294,10 @@ namespace Control
               else
               {
                 inf("Inside Radius overwrite: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
-                // Inside inner circle, go all the way backwards
               }
             }
+
+            // Inside inner circle, go all the way backwards
           }
 
           // Stay away from the pool wall
