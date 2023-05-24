@@ -88,10 +88,10 @@ namespace Sensors
       bool novatelSbas;
     };
 
-    struct Task: public Tasks::Task
+    struct Task : public Tasks::Task
     {
       //! Serial port handle.
-      IO::Handle* m_handle;
+      IO::Handle *m_handle;
       //! GPS Fix message.
       IMC::GpsFix m_fix;
       //! Euler angles message.
@@ -109,54 +109,53 @@ namespace Sensors
       //! Last initialization line read.
       std::string m_init_line;
       //! Reader thread.
-      Reader* m_reader;
+      Reader *m_reader;
       //! Buffer forEntityState
       char m_bufer_entity[64];
 
-      Task(const std::string& name, Tasks::Context& ctx):
-        Tasks::Task(name, ctx),
-        m_handle(NULL),
-        m_has_agvel(false),
-        m_has_euler(false),
-        m_reader(NULL)
+      Task(const std::string &name, Tasks::Context &ctx) : Tasks::Task(name, ctx),
+                                                           m_handle(NULL),
+                                                           m_has_agvel(false),
+                                                           m_has_euler(false),
+                                                           m_reader(NULL)
       {
         // Define configuration parameters.
         param("Serial Port - Device", m_args.uart_dev)
-        .defaultValue("")
-        .description("Serial port device used to communicate with the sensor");
+            .defaultValue("")
+            .description("Serial port device used to communicate with the sensor");
 
         param("Serial Port - Baud Rate", m_args.uart_baud)
-        .defaultValue("4800")
-        .description("Serial port baud rate");
+            .defaultValue("4800")
+            .description("Serial port baud rate");
 
         param("Input Timeout", m_args.inp_tout)
-        .units(Units::Second)
-        .defaultValue("4.0")
-        .minimumValue("0.0")
-        .description("Input timeout");
+            .units(Units::Second)
+            .defaultValue("4.0")
+            .minimumValue("0.0")
+            .description("Input timeout");
 
         param("Power Channel - Names", m_args.pwr_channels)
-        .defaultValue("")
-        .description("Device's power channels");
+            .defaultValue("")
+            .description("Device's power channels");
 
         param("Sentence Order", m_args.stn_order)
-        .defaultValue("")
-        .description("Sentence order");
+            .defaultValue("")
+            .description("Sentence order");
 
         for (unsigned i = 0; i < c_max_init_cmds; ++i)
         {
           std::string cmd_label = String::str("Initialization String %u - Command", i);
           param(cmd_label, m_args.init_cmds[i])
-          .defaultValue("");
+              .defaultValue("");
 
           std::string rpl_label = String::str("Initialization String %u - Reply", i);
           param(rpl_label, m_args.init_rpls[i])
-          .defaultValue("");
+              .defaultValue("");
         }
 
         param("Novatel SBAS", m_args.novatelSbas)
-        .defaultValue("false")
-        .description("Enable novatel sbas mode");
+            .defaultValue("false")
+            .description("Enable novatel sbas mode");
 
         // Initialize messages.
         clearMessages();
@@ -206,7 +205,7 @@ namespace Sensors
         if (std::sscanf(m_args.uart_dev.c_str(), "tcp://%[^:]:%u", addr, &port) != 2)
           return false;
 
-        TCPSocket* sock = new TCPSocket;
+        TCPSocket *sock = new TCPSocket;
         sock->connect(addr, port);
         m_handle = sock;
         return true;
@@ -260,7 +259,7 @@ namespace Sensors
       }
 
       void
-      consume(const IMC::DevDataText* msg)
+      consume(const IMC::DevDataText *msg)
       {
         if (msg->getDestination() != getSystemId())
           return;
@@ -268,7 +267,7 @@ namespace Sensors
         if (msg->getDestinationEntity() != getEntityId())
           return;
 
-        spew("%s", sanitize(msg->value).c_str());
+        inf("%s", sanitize(msg->value).c_str());
 
         if (getEntityState() == IMC::EntityState::ESTA_BOOT)
           m_init_line = msg->value;
@@ -277,7 +276,7 @@ namespace Sensors
       }
 
       void
-      consume(const IMC::IoEvent* msg)
+      consume(const IMC::IoEvent *msg)
       {
         if (msg->getDestination() != getSystemId())
           return;
@@ -301,7 +300,7 @@ namespace Sensors
       //! @param[in] stn string to compare.
       //! @return true on successful match, false otherwise.
       bool
-      waitInitReply(const std::string& stn)
+      waitInitReply(const std::string &stn)
       {
         Counter<float> counter(c_wait_reply_tout);
         while (!stopping() && !counter.overflow())
@@ -322,7 +321,7 @@ namespace Sensors
       //! @param[out] dst time.
       //! @return true if successful, false otherwise.
       bool
-      readTime(const std::string& str, float& dst)
+      readTime(const std::string &str, float &dst)
       {
         unsigned h = 0;
         unsigned m = 0;
@@ -346,7 +345,7 @@ namespace Sensors
       //! @param[out] dst latitude.
       //! @return true if successful, false otherwise.
       bool
-      readLatitude(const std::string& str, const std::string& h, double& dst)
+      readLatitude(const std::string &str, const std::string &h, double &dst)
       {
         int degrees = 0;
         double minutes = 0;
@@ -368,7 +367,7 @@ namespace Sensors
       //! @param[out] dst longitude.
       //! @return true if successful, false otherwise.
       double
-      readLongitude(const std::string& str, const std::string& h, double& dst)
+      readLongitude(const std::string &str, const std::string &h, double &dst)
       {
         int degrees = 0;
         double minutes = 0;
@@ -390,7 +389,7 @@ namespace Sensors
       //! @return true if successful, false otherwise.
       template <typename T>
       bool
-      readDecimal(const std::string& str, T& dst)
+      readDecimal(const std::string &str, T &dst)
       {
         unsigned idx = 0;
         while (str[idx] == '0')
@@ -405,7 +404,7 @@ namespace Sensors
       //! @return true if successful, false otherwise.
       template <typename T>
       bool
-      readNumber(const std::string& str, T& dst)
+      readNumber(const std::string &str, T &dst)
       {
         return castLexical(str, dst);
       }
@@ -413,7 +412,7 @@ namespace Sensors
       //! Process sentence.
       //! @param[in] line line.
       void
-      processSentence(const std::string& line)
+      processSentence(const std::string &line)
       {
         // Discard leading noise.
         size_t sidx = 0;
@@ -465,7 +464,7 @@ namespace Sensors
       //! Interpret given sentence.
       //! @param[in] parts vector of strings from sentence.
       void
-      interpretSentence(std::vector<std::string>& parts)
+      interpretSentence(std::vector<std::string> &parts)
       {
         if (parts[0] == m_args.stn_order.front())
         {
@@ -477,23 +476,28 @@ namespace Sensors
 
         if (hasNMEAMessageCode(parts[0], "ZDA"))
         {
+          inf("ZDA");
           interpretZDA(parts);
         }
         else if (hasNMEAMessageCode(parts[0], "GGA"))
         {
+          inf("GGA");
           interpretGGA(parts);
         }
         else if (hasNMEAMessageCode(parts[0], "VTG"))
         {
+          inf("VTG");
           interpretVTG(parts);
         }
         else if (parts[0] == "PSAT")
         {
+          inf("PSAT");
           if (parts[1] == "HPR")
             interpretPSATHPR(parts);
         }
         else if (parts[0] == "PUBX")
         {
+          inf("PUBX");
           if (parts[1] == "00")
             interpretPUBX00(parts);
         }
@@ -542,7 +546,7 @@ namespace Sensors
       }
 
       bool
-      hasNMEAMessageCode(const std::string& str, const std::string& code)
+      hasNMEAMessageCode(const std::string &str, const std::string &code)
       {
         return String::startsWith(str, "G") && String::endsWith(str, code);
       }
@@ -550,7 +554,7 @@ namespace Sensors
       //! Interpret ZDA sentence (UTC date and time).
       //! @param[in] parts vector of strings from sentence.
       void
-      interpretZDA(const std::vector<std::string>& parts)
+      interpretZDA(const std::vector<std::string> &parts)
       {
         if (parts.size() < c_zda_fields)
         {
@@ -563,9 +567,7 @@ namespace Sensors
           m_fix.validity |= IMC::GpsFix::GFV_VALID_TIME;
 
         // Read date.
-        if (readDecimal(parts[2], m_fix.utc_day)
-            && readDecimal(parts[3], m_fix.utc_month)
-            && readDecimal(parts[4], m_fix.utc_year))
+        if (readDecimal(parts[2], m_fix.utc_day) && readDecimal(parts[3], m_fix.utc_month) && readDecimal(parts[4], m_fix.utc_year))
         {
           m_fix.validity |= IMC::GpsFix::GFV_VALID_DATE;
         }
@@ -574,7 +576,7 @@ namespace Sensors
       //! Interpret GGA sentence (GPS fix data).
       //! @param[in] parts vector of strings from sentence.
       void
-      interpretGGA(const std::vector<std::string>& parts)
+      interpretGGA(const std::vector<std::string> &parts)
       {
         if (parts.size() < c_gga_fields)
         {
@@ -620,10 +622,7 @@ namespace Sensors
           }
         }
 
-        if (readLatitude(parts[2], parts[3], m_fix.lat)
-            && readLongitude(parts[4], parts[5], m_fix.lon)
-            && readNumber(parts[9], m_fix.height)
-            && readDecimal(parts[7], m_fix.satellites))
+        if (readLatitude(parts[2], parts[3], m_fix.lat) && readLongitude(parts[4], parts[5], m_fix.lon) && readNumber(parts[9], m_fix.height) && readDecimal(parts[7], m_fix.satellites))
         {
           // Convert altitude above sea level to altitude above ellipsoid.
           double geoid_sep = 0;
@@ -647,7 +646,7 @@ namespace Sensors
       //! Interpret PUBX00 sentence (navstar position).
       //! @param[in] parts vector of strings from sentence.
       void
-      interpretPUBX00(const std::vector<std::string>& parts)
+      interpretPUBX00(const std::vector<std::string> &parts)
       {
         if (parts.size() < c_pubx00_fields)
         {
@@ -666,10 +665,7 @@ namespace Sensors
           m_fix.validity |= IMC::GpsFix::GFV_VALID_POS;
         }
 
-        if (readLatitude(parts[3], parts[4], m_fix.lat)
-            && readLongitude(parts[5], parts[6], m_fix.lon)
-            && readNumber(parts[7], m_fix.height)
-            && readDecimal(parts[18], m_fix.satellites))
+        if (readLatitude(parts[3], parts[4], m_fix.lat) && readLongitude(parts[5], parts[6], m_fix.lon) && readNumber(parts[7], m_fix.height) && readDecimal(parts[18], m_fix.satellites))
         {
           // Convert coordinates to radians.
           m_fix.lat = Angles::radians(m_fix.lat);
@@ -697,7 +693,7 @@ namespace Sensors
       //! Interpret VTG sentence (course over ground).
       //! @param[in] parts vector of strings from sentence.
       void
-      interpretVTG(const std::vector<std::string>& parts)
+      interpretVTG(const std::vector<std::string> &parts)
       {
         if (parts.size() < c_vtg_fields)
         {
@@ -721,7 +717,7 @@ namespace Sensors
       //! Interpret VTG sentence (true heading).
       //! @param[in] parts vector of strings from sentence.
       void
-      interpretHDT(const std::vector<std::string>& parts)
+      interpretHDT(const std::vector<std::string> &parts)
       {
         if (parts.size() < c_hdt_fields)
         {
@@ -737,7 +733,7 @@ namespace Sensors
       //! the vessel derived from the true heading calculated).
       //! @param[in] parts vector of strings from sentence.
       void
-      interpretHDM(const std::vector<std::string>& parts)
+      interpretHDM(const std::vector<std::string> &parts)
       {
         if (parts.size() < c_hdm_fields)
         {
@@ -755,7 +751,7 @@ namespace Sensors
       //! Interpret ROT sentence (rate of turn).
       //! @param[in] parts vector of strings from sentence.
       void
-      interpretROT(const std::vector<std::string>& parts)
+      interpretROT(const std::vector<std::string> &parts)
       {
         if (parts.size() < c_rot_fields)
         {
@@ -774,7 +770,7 @@ namespace Sensors
       //! provides the heading, pitch, roll, and time in a single message).
       //! @param[in] parts vector of strings from sentence.
       void
-      interpretPSATHPR(const std::vector<std::string>& parts)
+      interpretPSATHPR(const std::vector<std::string> &parts)
       {
         if (parts.size() < c_psathpr_fields)
         {

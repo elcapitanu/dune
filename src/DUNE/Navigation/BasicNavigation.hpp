@@ -117,17 +117,16 @@ namespace DUNE
     //!
     //! Some pre-filtering is done by rejecting GPS fixes and LBL ranges as well as
     //! applying a moving average filter to the altitude DVL measurements.
-    class BasicNavigation: public Tasks::Periodic
+    class BasicNavigation : public Tasks::Periodic
     {
     public:
       //! Constructor.
       //! @param[in] name name.
       //! @param[in] ctx context.
-      BasicNavigation(const std::string& name, Tasks::Context& ctx);
+      BasicNavigation(const std::string &name, Tasks::Context &ctx);
 
       //! Destructor.
-      virtual
-      ~BasicNavigation(void);
+      virtual ~BasicNavigation(void);
 
       //! Update internal parameters.
       virtual void
@@ -146,49 +145,49 @@ namespace DUNE
       onResourceRelease(void) override;
 
       void
-      consume(const IMC::Acceleration* msg);
+      consume(const IMC::Acceleration *msg);
 
       void
-      consume(const IMC::AngularVelocity* msg);
+      consume(const IMC::AngularVelocity *msg);
 
       void
-      consume(const IMC::DataSanity* msg);
+      consume(const IMC::DataSanity *msg);
 
       void
-      consume(const IMC::Distance* msg);
+      consume(const IMC::Distance *msg);
 
       void
-      consume(const IMC::Depth* msg);
+      consume(const IMC::Depth *msg);
 
       void
-      consume(const IMC::DepthOffset* msg);
+      consume(const IMC::DepthOffset *msg);
 
       void
-      consume(const IMC::EulerAngles* msg);
+      consume(const IMC::EulerAngles *msg);
 
       void
-      consume(const IMC::EulerAnglesDelta* msg);
+      consume(const IMC::EulerAnglesDelta *msg);
 
       void
-      consume(const IMC::GpsFix* msg);
+      consume(const IMC::GpsFix *msg);
 
       void
-      consume(const IMC::GroundVelocity* msg);
+      consume(const IMC::GroundVelocity *msg);
 
       void
-      consume(const IMC::LblConfig* msg);
+      consume(const IMC::LblConfig *msg);
 
       void
-      consume(const IMC::LblRange* msg);
+      consume(const IMC::LblRange *msg);
 
       void
-      consume(const IMC::Rpm* msg);
+      consume(const IMC::Rpm *msg);
 
       void
-      consume(const IMC::UsblFixExtended* msg);
+      consume(const IMC::UsblFixExtended *msg);
 
       void
-      consume(const IMC::WaterVelocity* msg);
+      consume(const IMC::WaterVelocity *msg);
 
     protected:
       //! Get depth value.
@@ -379,7 +378,7 @@ namespace DUNE
       updateEulerDelta(float filter)
       {
         for (unsigned i = 0; i < 3; ++i)
-          m_edelta_bfr[i] =  getEulerDelta(i) * filter;
+          m_edelta_bfr[i] = getEulerDelta(i) * filter;
 
         m_edelta_readings = filter;
       }
@@ -390,7 +389,7 @@ namespace DUNE
       updateAngularVelocities(float filter)
       {
         for (unsigned i = 0; i < 3; ++i)
-          m_agvel_bfr[i] =  getAngularVelocity(i) * filter;
+          m_agvel_bfr[i] = getAngularVelocity(i) * filter;
 
         m_angular_readings = filter;
       }
@@ -401,7 +400,7 @@ namespace DUNE
       updateAcceleration(float filter)
       {
         for (unsigned i = 0; i < 3; ++i)
-          m_accel_bfr[i] =  getAcceleration(i) * filter;
+          m_accel_bfr[i] = getAcceleration(i) * filter;
 
         m_accel_readings = filter;
       }
@@ -461,7 +460,7 @@ namespace DUNE
       //! @param[out] u forward speed state index.
       //! @param[out] v transversal speed state index.
       virtual void
-      getSpeedOutputStates(unsigned* u, unsigned* v) = 0;
+      getSpeedOutputStates(unsigned *u, unsigned *v) = 0;
 
       //! Get number of EKF outputs.
       //! @return number of outputs.
@@ -591,7 +590,7 @@ namespace DUNE
       //! @param[out] q angular velocity along the y-axis.
       //! @param[out] r angular velocity along the z-axis.
       void
-      extractEarthRotation(double& p, double& q, double& r);
+      extractEarthRotation(double &p, double &q, double &r);
 
       //! Routine to reset sensor buffers.
       void
@@ -600,7 +599,7 @@ namespace DUNE
       //! Routine to start navigation
       //! @param[in] msg GpsFix IMC message
       void
-      startNavigation(const IMC::GpsFix* msg);
+      startNavigation(const IMC::GpsFix *msg);
 
       //! Routine to correct LBL positions. This method must be invoked whenever
       //! a new navigation reference is created to correct transducers positions.
@@ -631,7 +630,7 @@ namespace DUNE
       //! Previous velocity relative to water message measurement.
       IMC::WaterVelocity m_wvel_previous;
       //! Navigation Startup point.
-      IMC::GpsFix* m_origin;
+      IMC::GpsFix *m_origin;
       //! Displacement between LBL and GPS.
       float m_dist_lbl_gps;
       //! Always reject LblRanges.
@@ -694,9 +693,9 @@ namespace DUNE
       //! Depth offset value.
       float m_depth_offset;
       //! Moving Average for heave.
-      Math::MovingAverage<double>* m_avg_heave;
+      Math::MovingAverage<double> *m_avg_heave;
       //! Moving Average for GpsFix.
-      Math::MovingAverage<double>* m_avg_gps;
+      Math::MovingAverage<double> *m_avg_gps;
       //! Number of samples to average heave.
       unsigned m_avg_heave_samples;
       //! Number of samples to average GPS.
@@ -724,11 +723,13 @@ namespace DUNE
       //! DVL water velocity validation bits.
       uint8_t m_wvel_val_bits;
       //! USBL position filter.
-      UsblTools::Filter* m_usbl_filter;
+      UsblTools::Filter *m_usbl_filter;
       //! Number of moving average samples for USBL filter.
       unsigned m_usbl_avg_samples;
       //! Maximum deviation possible to issue error.
       double m_usbl_k_std;
+
+      double my_yaw, my_pitch, my_roll;
     };
   }
 }

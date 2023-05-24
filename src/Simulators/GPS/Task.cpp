@@ -83,7 +83,7 @@ namespace Simulators
     };
 
     //! %GPS simulator task.
-    struct Task: public Tasks::Periodic
+    struct Task : public Tasks::Periodic
     {
       //! GPS Fix message.
       IMC::GpsFix m_fix;
@@ -100,43 +100,42 @@ namespace Simulators
       //! Task arguments.
       Arguments m_args;
 
-      Task(const std::string& name, Tasks::Context& ctx):
-        Tasks::Periodic(name, ctx)
+      Task(const std::string &name, Tasks::Context &ctx) : Tasks::Periodic(name, ctx)
       {
         // Retrieve configuration parameters.
         param("Report Ground Velocity", m_args.report_gv)
-        .defaultValue("false")
-        .description("Activate output of Ground Velocity messages");
+            .defaultValue("false")
+            .description("Activate output of Ground Velocity messages");
 
         param("Report Yaw", m_args.report_yaw)
-        .defaultValue("false")
-        .description("Activate output of Euler Angles messages");
+            .defaultValue("false")
+            .description("Activate output of Euler Angles messages");
 
         param("Activation Depth", m_args.act_depth)
-        .units(Units::Meter)
-        .minimumValue("0.0")
-        .maximumValue("1.0")
-        .defaultValue("0.20")
-        .description("Minimum depth at which the GPS is unable to produce accurate fixes");
+            .units(Units::Meter)
+            .minimumValue("0.0")
+            .maximumValue("1.0")
+            .defaultValue("0.20")
+            .description("Minimum depth at which the GPS is unable to produce accurate fixes");
 
         param("HDOP", m_args.hdop)
-        .minimumValue("0.0")
-        .defaultValue("0.9")
-        .description("Horizontal Dilution of Position index");
+            .minimumValue("0.0")
+            .defaultValue("0.9")
+            .description("Horizontal Dilution of Position index");
 
         param("HACC", m_args.hacc)
-        .minimumValue("0.0")
-        .defaultValue("2.0")
-        .description("Horizontal Accuracy index");
+            .minimumValue("0.0")
+            .defaultValue("2.0")
+            .description("Horizontal Accuracy index");
 
         param("Number of Satellites", m_args.n_sat)
-        .defaultValue("8")
-        .description("Number of available satellites");
+            .defaultValue("8")
+            .description("Number of available satellites");
 
         param("Initial Position", m_args.position)
-        .units(Units::Degree)
-        .size(2)
-        .description("Initial position of the vehicle");
+            .units(Units::Degree)
+            .size(2)
+            .description("Initial position of the vehicle");
 
         m_fix.clear();
         m_euler.clear();
@@ -168,7 +167,7 @@ namespace Simulators
       }
 
       void
-      consume(const IMC::GpsFix* msg)
+      consume(const IMC::GpsFix *msg)
       {
         if (msg->type != IMC::GpsFix::GFT_MANUAL_INPUT)
           return;
@@ -180,7 +179,7 @@ namespace Simulators
       }
 
       void
-      consume(const IMC::SimulatedState* msg)
+      consume(const IMC::SimulatedState *msg)
       {
         if (getEntityState() != IMC::EntityState::ESTA_NORMAL)
         {
@@ -231,6 +230,7 @@ namespace Simulators
         // WGS84 coordinates.
         m_fix.lat = m_origin.lat;
         m_fix.lon = m_origin.lon;
+
         m_fix.height = m_origin.height;
         WGS84::displace(m_sstate.x, m_sstate.y, m_sstate.z, &m_fix.lat, &m_fix.lon, &m_fix.height);
         m_fix.utc_time = ((uint32_t)now) % 86400;
