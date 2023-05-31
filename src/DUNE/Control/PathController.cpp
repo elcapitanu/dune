@@ -191,9 +191,9 @@ namespace DUNE
           .description("Minimum depth to maintain during bottom tracking");
 
       param("Maximum Track Length", m_max_track_length)
-      .defaultValue("25000")
-      .units(Units::Meter)
-      .description("Maximum admissible track length");
+          .defaultValue("25000")
+          .units(Units::Meter)
+          .description("Maximum adimissible track length");
 
       m_ctx.config.get("General", "Absolute Maximum Depth", "50.0", m_btd.args.depth_limit);
       m_btd.args.depth_limit -= c_depth_margin;

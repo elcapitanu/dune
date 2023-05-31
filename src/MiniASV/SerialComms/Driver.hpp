@@ -99,7 +99,6 @@ namespace MiniASV
           // m_task->debug("Accel: %f|%f|%f", m_miniASVData.accelX, m_miniASVData.accelY, m_miniASVData.accelZ);
           // m_miniASVData.state_new_data[1] = true;
 
-
           return true;
         }
         else if (std::strcmp(param, "$GYRO") == 0)
@@ -206,7 +205,7 @@ namespace MiniASV
     private:
       DUNE::Tasks::Task *m_task;
       float m_timeout_uart;
-      char bfr[128];
+      char bfr[64];
     };
 
   }

@@ -67,8 +67,6 @@ namespace MiniASV
       DriverMiniASV *m_driver;
       //! Timer
       Counter<double> m_wdog;
-      //! IMC msg
-      IMC::EulerAngles m_angles;
       //! Read timestamp.
       double m_tstamp;
       //! Count for attempts
@@ -189,9 +187,6 @@ namespace MiniASV
       void
       consume(const IMC::SetThrusterActuation *msg)
       {
-        /* if (msg->getDestination() != getSystemId())
-          return; */
-
         if (msg->id == 0)
         {
           m_driver->m_miniASVData.pwmR = static_cast<int>(msg->getValueFP() * 25);

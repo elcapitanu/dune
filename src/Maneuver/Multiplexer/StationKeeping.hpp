@@ -135,15 +135,6 @@ namespace Maneuver
         }
       }
 
-      //! On ManeuverDone message
-      //! @param[in] pcs pointer to ManeuverDone message
-      void
-      onManeuverDone(const IMC::ManeuverDone* msg)
-      {
-        (void)msg;
-        m_task->signalCompletion();
-      }
-
     private:
       //! Station Keeping behavior
       Maneuvers::StationKeep* m_skeep;
