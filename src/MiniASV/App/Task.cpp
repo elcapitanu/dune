@@ -111,25 +111,25 @@ onMain(void)
         if (received_message == "Task1")
         {
           inf("Executing Task 1");
-          std::string message = "Acknowledged Task 1!";
+          std::string message = "ACK Task1";
           client_socket->write(message.c_str(), message.size());
         }
         else if (received_message == "Task2")
         {
           inf("Executing Task 2");
-          std::string message = "Acknowledged Task 2!";
+          std::string message = "ACK Task2";
           client_socket->write(message.c_str(), message.size());
         }
         else if (received_message == "Task3")
         {
           inf("Executing Task 3");
-          std::string message = "Acknowledged Task 3!";
+          std::string message = "ACK Task3";
           client_socket->write(message.c_str(), message.size());
         }
         else if (received_message == "Task4")
         {
           inf("Executing Task 4");
-          std::string message = "Acknowledged Task 4!";
+          std::string message = "ACK Task4";
           client_socket->write(message.c_str(), message.size());
         }
         else if (received_message == "Ping")
