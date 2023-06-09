@@ -183,7 +183,7 @@ namespace Control
 
           double in_abs = sqrt(pow(in_x, 2) + pow(in_y, 2));
 
-          inf("Pos(X, Y): %.2f, %.2f -> ABS: %.2f", x_pos, y_pos, in_abs);
+          spew("Pos(X, Y): %.2f, %.2f -> ABS: %.2f", x_pos, y_pos, in_abs);
 
           double x_final = x_pos + ts.range * cos(ts.los_angle);
           double y_final = y_pos + ts.range * sin(ts.los_angle);
@@ -214,7 +214,7 @@ namespace Control
           // if (out_radius < in_radius)
           // {
           //   out_radius = 2.5;
-          //   inf("AHHHH MERDEI, ERRO ENTRE PAREDE E OBSTACULO");
+          //   spew("AHHHH MERDEI, ERRO ENTRE PAREDE E OBSTACULO");
           // }
 
           if (ts.track_pos.x > ts.track_length)
@@ -249,7 +249,7 @@ namespace Control
 
               if (in_abs >= in_radius)
               {
-                inf("out radius initial: %.2f", Angles::degrees(Angles::normalizeRadian(ref)));
+                spew("out radius initial: %.2f", Angles::degrees(Angles::normalizeRadian(ref)));
                 if (laranja)
                 {
                   ref -= DUNE::Math::Angles::radians(90) - DUNE::Math::Angles::radians(10);
@@ -268,11 +268,11 @@ namespace Control
                 //   {
                 //     ref += DUNE::Math::Angles::radians(90) + DUNE::Math::Angles::radians(10); // Extra value to make ti a little more agressive
                 //   }
-                //   inf("out radius final: %.2f", Angles::degrees(Angles::normalizeRadian(ref)));
+                //   spew("out radius final: %.2f", Angles::degrees(Angles::normalizeRadian(ref)));
               }
               else
               {
-                inf("Inside Radius overwrite: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
+                spew("Inside Radius overwrite: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
               }
             }
 
@@ -287,10 +287,10 @@ namespace Control
             aux_y = 12.5 - y_pos;
 
             ref = std::atan2(aux_y, aux_x); // Always points to the center of the pool
-            inf("Bro too close to the WALL");
+            spew("Bro too close to the WALL");
           }
 
-          inf("Loop ref: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
+          spew("Loop ref: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
 
           if (ts.cc)
             ref += state.psi - ts.course; // course control rather than yaw control

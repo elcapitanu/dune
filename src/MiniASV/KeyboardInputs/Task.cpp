@@ -161,17 +161,17 @@ namespace MiniASV
             // maneuver.lat = DUNE::Math::Angles::radians(maneuver.lat);
 
             //! Create Goto command in database
-            // IMC::PlanGeneration m_gen;
+            IMC::PlanGeneration m_gen;
 
-            // // inf("Goto ID %d", IMC::Goto::getIdStatic());
-            // // m_gen.op = IMC::PlanGeneration::OP_REQUEST;
-            // // m_gen.plan_id = "go"; // Goto ID
-            // // m_gen.params = "loc=;lat=" + std::to_string(maneuver.lat) + ";lon=" + std::to_string(maneuver.lon) + ";depth=0";
-            // // m_gen.cmd = IMC::PlanGeneration::CMD_GENERATE;
-            // // dispatch(m_gen);
+            inf("Goto ID %d", IMC::Goto::getIdStatic());
+            m_gen.op = IMC::PlanGeneration::OP_REQUEST;
+            m_gen.plan_id = "go"; // Goto ID
+            m_gen.params = "loc=;lat=" + std::to_string(maneuver.lat) + ";lon=" + std::to_string(maneuver.lon) + ";depth=0";
+            m_gen.cmd = IMC::PlanGeneration::CMD_GENERATE;
+            dispatch(m_gen);
 
-            // // m_gen.cmd = IMC::PlanGeneration::CMD_EXECUTE;
-            // // dispatch(m_gen);
+            m_gen.cmd = IMC::PlanGeneration::CMD_EXECUTE;
+            dispatch(m_gen);
 
             // IMC::PlanControl *p_control = new IMC::PlanControl();
             // IMC::PlanSpecification *ps = new IMC::PlanSpecification();

@@ -66,7 +66,7 @@ namespace Simulators
       //! Simulation time multiplier
       double time_multiplier;
 
-      //std::string label_tag;
+      // std::string label_tag;
     };
 
     //! Simulator task.
@@ -85,7 +85,7 @@ namespace Simulators
 
       float yaw, pitch, roll;
 
-      //unsigned m_tag_eid;
+      // unsigned m_tag_eid;
 
       Task(const std::string &name, Tasks::Context &ctx) : Periodic(name, ctx),
                                                            m_vehicle(NULL),
@@ -108,7 +108,7 @@ namespace Simulators
         bind<IMC::ServoPosition>(this);
         bind<IMC::SetThrusterActuation>(this);
         bind<IMC::EstimatedStreamVelocity>(this);
-        bind<IMC::EulerAngles>(this);
+        // bind<IMC::EulerAngles>(this);
       }
 
       void
@@ -133,7 +133,7 @@ namespace Simulators
       void
       onResourceInitialization(void)
       {
-        //m_tag_eid = resolveEntity(m_args.label_tag);
+        // m_tag_eid = resolveEntity(m_args.label_tag);
 
         // Initialize simulation world.
         m_world = Factory::produceWorld(m_ctx.config);
@@ -214,13 +214,13 @@ namespace Simulators
               m_svel[2]);
       }
 
-      void
-      consume(const IMC::EulerAngles *msg)
-      {
-        roll = msg->phi;
-        pitch = msg->theta;
-        yaw = msg->psi;
-      }
+      // void
+      // consume(const IMC::EulerAngles *msg)
+      // {
+      //   roll = msg->phi;
+      //   pitch = msg->theta;
+      //   yaw = msg->psi;
+      // }
 
       void
       task(void)
@@ -246,14 +246,14 @@ namespace Simulators
         m_sstate.z = std::max(position[2], 0.0);
 
         // Fill attitude.
-        /* double *attitude = m_vehicle->getOrientation();
+        double *attitude = m_vehicle->getOrientation();
         m_sstate.phi = Angles::normalizeRadian(attitude[0]);
         m_sstate.theta = Angles::normalizeRadian(attitude[1]);
-        m_sstate.psi = Angles::normalizeRadian(attitude[2]); */
+        m_sstate.psi = Angles::normalizeRadian(attitude[2]);
 
-        m_sstate.phi = Angles::normalizeRadian(roll);
-        m_sstate.theta = Angles::normalizeRadian(pitch);
-        m_sstate.psi = Angles::normalizeRadian(yaw);
+        // m_sstate.phi = Angles::normalizeRadian(roll);
+        // m_sstate.theta = Angles::normalizeRadian(pitch);
+        // m_sstate.psi = Angles::normalizeRadian(yaw);
 
         // Fill angular velocity.
         double *av = m_vehicle->getAngularVelocity();

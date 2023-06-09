@@ -40,13 +40,12 @@ namespace MiniASV
   {
     using DUNE_NAMESPACES;
 
-    struct Task: public DUNE::Tasks::Task
+    struct Task : public DUNE::Tasks::Task
     {
       //! Constructor.
       //! @param[in] name task name.
       //! @param[in] ctx context.
-      Task(const std::string& name, Tasks::Context& ctx):
-        DUNE::Tasks::Task(name, ctx)
+      Task(const std::string &name, Tasks::Context &ctx) : DUNE::Tasks::Task(name, ctx)
       {
       }
 
@@ -86,21 +85,21 @@ namespace MiniASV
       {
       }
 
-	void
-	onMain(void)
-	{
-	
-	  IMC::Temperature msg;   // use temperature message from IMC 
-	  msg.value = 1;         // Initialize the temperature value.
-	  
-	  while (!stopping())
-	  {
-	  	std::cout << msg.value << "\n";
-	  	msg.value += 1;
-	    dispatch(msg);       // Dispatch the value to the message bus
-	    Delay::wait(1.0);    // Wait doing nothing.
-	  }
-	}
+      void
+      onMain(void)
+      {
+
+        IMC::Temperature msg; // use temperature message from IMC
+        msg.value = 1;        // Initialize the temperature value.
+
+        while (!stopping())
+        {
+          // std::cout << msg.value << "\n";
+          msg.value += 1;
+          dispatch(msg);    // Dispatch the value to the message bus
+          Delay::wait(0.2); // Wait doing nothing.
+        }
+      }
     };
   }
 }
