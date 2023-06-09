@@ -173,19 +173,19 @@ namespace MiniASV
             // // m_gen.cmd = IMC::PlanGeneration::CMD_EXECUTE;
             // // dispatch(m_gen);
 
-            // IMC::PlanControl *p_control = new IMC::PlanControl();
+            IMC::PlanControl p_control; //= new IMC::PlanControl();
             // IMC::PlanSpecification *ps = new IMC::PlanSpecification();
 
-            // p_control->type = IMC::PlanControl::PC_REQUEST;
-            // p_control->op = IMC::PlanControl::PC_START;
-            // p_control->request_id = 151;
-            // p_control->flags = IMC::PlanControl::FLG_CALIBRATE;
-            // p_control->setDestination(p_control->getSource());
-            // p_control->setDestinationEntity(p_control->getSourceEntity());
-            // p_control->plan_id = "rows_coverage_caravela";
-            // // p_control->arg.set(*ps);
-            // // p_control->info = "Will this finally work?"; // Useless ahah
-            // dispatch(*p_control);
+            p_control.type = IMC::PlanControl::PC_REQUEST;
+            p_control.op = IMC::PlanControl::PC_START;
+            // p_control.request_id = 151;
+            p_control.flags = IMC::PlanControl::FLG_IGNORE_ERRORS;
+            p_control.setDestination(getSystemId());
+            // p_control->setDestinationEntity(getEntityId());
+            p_control.plan_id = "rows_coverage_caravela";
+            // p_control->arg.set(*ps);
+            // p_control->info = "Will this finally work?"; // Useless ahah
+            dispatch(p_control);
 
             break;
           }
