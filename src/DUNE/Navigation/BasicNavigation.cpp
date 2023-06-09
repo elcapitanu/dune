@@ -492,9 +492,30 @@ namespace DUNE
     void
     BasicNavigation::consume(const IMC::EulerAngles *msg)
     {
-      my_roll = msg->phi;
-      my_pitch = msg->theta;
-      my_yaw = msg->psi;
+      // if (msg->getSourceEntity() != m_ahrs_eid)
+      //   return;
+
+      if (std::fabs(msg->phi) > Math::c_pi ||
+          std::fabs(msg->theta) > Math::c_pi ||
+          std::fabs(msg->psi) > Math::c_pi)
+      {
+        war(DTR("received euler angles beyond range: %f, %f, %f"),
+            msg->phi, msg->theta, msg->psi);
+        return;
+      }
+
+      m_euler_bfr[AXIS_X] += msg->phi;
+
+      m_euler_bfr[AXIS_Y] += msg->theta;
+
+      // Heading buffer maintains sign.
+      m_euler_bfr[AXIS_Z] += getEuler(AXIS_Z) + Math::Angles::minSignedAngle(getEuler(AXIS_Z), msg->psi);
+      ++m_euler_readings;
+
+      if (m_declination_defined && m_use_declination)
+        m_euler_bfr[AXIS_Z] += m_declination;
+
+      m_time_without_euler.reset();
     }
 
     void
@@ -1020,11 +1041,9 @@ namespace DUNE
       m_estate.x = m_kal.getState(STATE_X);
       m_estate.y = m_kal.getState(STATE_Y);
       m_estate.z = m_last_z + getDepth();
-      // m_estate.phi = Math::Angles::normalizeRadian(getEuler(AXIS_X));
-      // m_estate.theta = Math::Angles::normalizeRadian(getEuler(AXIS_Y));
-      m_estate.phi = Math::Angles::normalizeRadian(my_roll);
-      m_estate.theta = Math::Angles::normalizeRadian(my_pitch);
-      m_estate.psi = Math::Angles::normalizeRadian(my_yaw);
+      m_estate.phi = Math::Angles::normalizeRadian(getEuler(AXIS_X));
+      m_estate.theta = Math::Angles::normalizeRadian(getEuler(AXIS_Y));
+      m_estate.psi = Math::Angles::normalizeRadian(getEuler(AXIS_Z));
       m_estate.p = getAngularVelocity(AXIS_X);
       m_estate.q = getAngularVelocity(AXIS_Y);
       m_estate.alt = getAltitude();
@@ -1051,6 +1070,7 @@ namespace DUNE
 
       if (gotEulerReadings())
       {
+        war("li o teu yaw: %f", my_yaw);
         IMC::EstimatedState estate;
         estate.lat = m_last_lat;
         estate.lon = m_last_lon;
