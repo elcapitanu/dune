@@ -99,7 +99,6 @@ namespace MiniASV
           // m_task->debug("Accel: %f|%f|%f", m_miniASVData.accelX, m_miniASVData.accelY, m_miniASVData.accelZ);
           // m_miniASVData.state_new_data[1] = true;
 
-
           return true;
         }
         else if (std::strcmp(param, "$GYRO") == 0)
@@ -136,7 +135,7 @@ namespace MiniASV
           m_miniASVData.pitch = atof(param);
           param = std::strtok(NULL, ",");
           m_miniASVData.roll = atof(param);
-          m_task->debug("YPR: %f|%f|%f", m_miniASVData.yaw, m_miniASVData.pitch, m_miniASVData.roll);
+          //m_task->debug("YPR: %f|%f|%f", m_miniASVData.yaw, m_miniASVData.pitch, m_miniASVData.roll);
           // m_miniASVData.state_new_data[4] = true;
 
           return true;
@@ -158,7 +157,7 @@ namespace MiniASV
         char cmdText[32];
         std::sprintf(cmdText, "%s%c\n", cmd, (Algorithms::XORChecksum::compute((uint8_t *)cmd, strlen(cmd) - 1) | 0x80));
         // std::sprintf(cmdText, "%s\n", cmd);
-        // m_task->inf("Command (no rsp): %s", cmdText);
+        // m_task->inf("Command (no rsp): %s", cmd);
         m_uart->writeString(cmdText);
       }
 
@@ -168,16 +167,17 @@ namespace MiniASV
         char cmdText[32];
         char cmdReplyText[32];
         std::sprintf(cmdText, "%s%c\n", send, (Algorithms::XORChecksum::compute((uint8_t *)send, strlen(send) - 1) | 0x80));
-        std::sprintf(cmdReplyText, "%s%c\n", reply, (Algorithms::XORChecksum::compute((uint8_t *)reply, strlen(reply) - 1) | 0x80));
+        std::sprintf(cmdReplyText, "%s%c", reply, (Algorithms::XORChecksum::compute((uint8_t *)reply, strlen(reply) - 1) | 0x80));
         /* std::sprintf(cmdText, "%s\n", send);
         std::sprintf(cmdReplyText, "%s\n", reply); */
         char bfrUart[128];
-        m_task->inf("Command: %s", cmdText);
+        m_task->inf("Command: %s", send);
         m_uart->writeString(cmdText);
 
         if (Poll::poll(*m_uart, m_timeout_uart))
         {
           m_uart->readString(bfrUart, sizeof(bfrUart));
+          bfrUart[strlen(bfrUart) - 1] = '\0';
           m_task->inf("Reply: %s", bfrUart);
           if (std::strcmp(bfrUart, cmdReplyText) == 0)
           {

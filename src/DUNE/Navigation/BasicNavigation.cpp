@@ -1018,9 +1018,7 @@ namespace DUNE
       m_estate.z = m_last_z + getDepth();
       m_estate.phi = Math::Angles::normalizeRadian(getEuler(AXIS_X));
       m_estate.theta = Math::Angles::normalizeRadian(getEuler(AXIS_Y));
-      // m_estate.phi = Math::Angles::normalizeRadian(my_roll);
-      // m_estate.theta = Math::Angles::normalizeRadian(my_pitch);
-      // m_estate.psi = Math::Angles::normalizeRadian(my_yaw);
+      m_estate.psi = Math::Angles::normalizeRadian(getEuler(AXIS_Z));
       m_estate.p = getAngularVelocity(AXIS_X);
       m_estate.q = getAngularVelocity(AXIS_Y);
       m_estate.alt = getAltitude();
@@ -1047,6 +1045,7 @@ namespace DUNE
 
       if (gotEulerReadings())
       {
+        war("li o teu yaw: %f", my_yaw);
         IMC::EstimatedState estate;
         estate.lat = m_last_lat;
         estate.lon = m_last_lon;

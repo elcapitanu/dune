@@ -196,7 +196,7 @@ namespace MiniASV
 
         m_gps.validity = IMC::GpsFix::GFV_VALID_POS;
         dispatch(m_gps, DF_KEEP_TIME);
-        inf("TAG:(x, y) || (lat, lon) = %.2f, %.2f || %.2f, %.2f", m_x, m_y, m_gps.lat, m_gps.lon);
+        // inf("TAG:(x, y) || (lat, lon) = %.2f, %.2f || %.2f, %.2f", m_x, m_y, m_gps.lat, m_gps.lon);
       }
 
       bool
@@ -227,7 +227,7 @@ namespace MiniASV
             m_distance2 += 0.01;
           }
 
-          inf("d1: %.3f, d2: %.3f", m_distance1, m_distance2);
+          // inf("d1: %.3f, d2: %.3f", m_distance1, m_distance2);
 
           // anchors pos: (0,0) and (m_args.dist_anchors,0)
           m_x = (pow(m_distance1, 2) + pow(m_args.dist_anchors, 2) - pow(m_distance2, 2)) / (2 * m_args.dist_anchors);
