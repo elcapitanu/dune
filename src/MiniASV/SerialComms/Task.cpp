@@ -229,7 +229,7 @@ namespace MiniASV
         m_eulerAngles.theta = (m_driver->m_miniASVData.pitch) / Math::c_degrees_per_radian;
         m_eulerAngles.psi = -(m_driver->m_miniASVData.yaw) / Math::c_degrees_per_radian; // for some unkown reason I had to reserve the angle, in order to work
         m_eulerAngles.psi_magnetic = m_eulerAngles.psi;
-        war("YAW: %f", m_eulerAngles.psi);
+        //war("YAW: %f", m_eulerAngles.psi);
         dispatch(m_eulerAngles, DF_KEEP_TIME);
       }
 
