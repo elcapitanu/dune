@@ -230,7 +230,7 @@ namespace MiniASV
       {
         m_tstamp = Clock::getSinceEpoch();
 
-        m_driver->miniASVData.yaw = Angles::normalizeRadian(m_driver->miniASVData.yaw + Angles::radians(m_args.angle_offset));
+        m_driver->m_miniASVData.yaw = Angles::normalizeRadian(m_driver->m_miniASVData.yaw + Angles::radians(m_args.angle_offset));
 
         m_eulerAngles.setTimeStamp(m_tstamp);
         m_eulerAngles.phi = (m_driver->m_miniASVData.roll) / Math::c_degrees_per_radian;
