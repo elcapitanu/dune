@@ -56,6 +56,8 @@ namespace Control
         bool ext_control;
         double ext_gain;
         double ext_trgain;
+        float obs_x, obs_y;
+        float in_radius, out_radius;
       };
 
       struct Task : public DUNE::Control::PathController
@@ -66,6 +68,9 @@ namespace Control
         IMC::DesiredHeading m_heading;
         //! Task arguments.
         Arguments m_args;
+
+        double big_lon = -8.59896405, small_lon = -8.5991518;
+        double big_lat = 41.17539860, small_lat = 41.17507457;
 
         Task(const std::string &name, Tasks::Context &ctx) : DUNE::Control::PathController(name, ctx)
         {
@@ -94,6 +99,22 @@ namespace Control
           param("Extended Control -- Turn Rate Gain", m_args.ext_trgain)
               .defaultValue("1.0")
               .description("Turn rate gain for extended control");
+
+          param("Obstacle Avoidance -- x", m_args.obs_x)
+              .defaultValue("12.5")
+              .description("Position of obstacle in coordinate x");
+
+          param("Obstacle Avoidance -- y", m_args.obs_y)
+              .defaultValue("1")
+              .description("Position of obstacle in coordinate y");
+
+          param("Obstacle Avoidance -- in_radius", m_args.in_radius)
+              .defaultValue("3.5")
+              .description("Distancia de segurança ao obstáculo");
+
+          param("Obstacle Avoidance -- out_radius", m_args.out_radius)
+              .defaultValue("5")
+              .description("Distância em que começa o desvio do obstáculo");
         }
 
         void
@@ -120,30 +141,40 @@ namespace Control
           enableControlLoops(IMC::CL_YAW);
         }
 
+        // IE: 41.17513715, -8.5991518
+        // SE: 41.17546118, -8.59900295
+        // ID: 41.17507457, -8.59896405
+        // SD: 41.17539860, -8.59881385
+
+        // IE: 41.18365977, -8.70836583
+        // SE: 41.18388433, -8.70836548
+        // ID: 41.18365927, -8.7080671
+        // SD: 41.18388408, -8.70806743
+
         double
         x_pos_to_latitude(double x)
         {
-          return (x - 0) * (41.18388408 - 41.18365927) / (25 - 0) + 41.18365927;
+          return (x - 0) * (big_lat - small_lat) / (25 - 0) + small_lat;
         }
 
         double
         y_pos_to_longitude(double y)
         {
-          return (y - 0) * (-8.7080671 - -8.70836583) / (25 - 0) - 8.70836583;
+          return (y - 0) * (big_lon - small_lon) / (25 - 0) + small_lon;
         }
 
         //! In meters
         double
         latitude_to_x_pos(double lat)
         {
-          return (lat - 41.18365927) * (25 - 0) / (41.18388408 - 41.18365927) + 0;
+          return (lat - small_lat) * (25 - 0) / (big_lat - small_lat) + 0;
         }
 
         //! In meters
         double
         longitude_to_y_pos(double lon)
         {
-          return (lon + 8.70836583) * (25 - 0) / (-8.7080671 + 8.70836583) + 0;
+          return (lon - small_lon) * (25 - 0) / (big_lon - small_lon) + 0;
         }
 
         //! Execute a path control step
@@ -163,10 +194,10 @@ namespace Control
           double ref = 0; // Radians of vector
 
           // for testing
-          double obs_x = 30;
-          double obs_y = 30;
+          double obs_x = m_args.obs_x;
+          double obs_y = m_args.obs_y;
 
-          double in_radius = 3.5, out_radius = 5;
+          double in_radius = m_args.in_radius, out_radius = m_args.out_radius;
           double x_pos, y_pos;
 
           // calculate x and y based on track and current state

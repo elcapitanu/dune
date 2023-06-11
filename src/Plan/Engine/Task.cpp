@@ -277,7 +277,6 @@ namespace Plan
       void
       consume(const IMC::RegisterManeuver *msg)
       {
-        spew("resgistei a tua mao");
         m_supported_maneuvers.insert(msg->mid);
       }
 
