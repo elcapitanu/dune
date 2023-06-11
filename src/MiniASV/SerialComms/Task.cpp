@@ -53,6 +53,8 @@ namespace MiniASV
       double input_timeout;
       //! Number of attempts before error
       int number_attempts;
+      //! Angle offset inc case IMU is acting up
+      float angle_offset;
     };
 
     struct Task : public DUNE::Tasks::Task
@@ -100,6 +102,10 @@ namespace MiniASV
             .maximumValue("4.0")
             .units(Units::Second)
             .description("Amount of seconds to wait for data before reporting an error");
+
+            param("Angle Offset", m_args.angle_offset)
+            .defaultValue("0")
+            .description("Angle offset inc case IMU's bussola is acting up");
 
         bind<IMC::SetThrusterActuation>(this);
       }
@@ -223,6 +229,8 @@ namespace MiniASV
       dispatchData()
       {
         m_tstamp = Clock::getSinceEpoch();
+
+        m_driver->miniASVData.yaw = Angles::normalizeRadian(m_driver->miniASVData.yaw + Angles::radians(m_args.angle_offset));
 
         m_eulerAngles.setTimeStamp(m_tstamp);
         m_eulerAngles.phi = (m_driver->m_miniASVData.roll) / Math::c_degrees_per_radian;
