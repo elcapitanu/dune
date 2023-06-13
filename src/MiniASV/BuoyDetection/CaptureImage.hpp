@@ -115,7 +115,7 @@ namespace MiniASV
           {
             m_is_capturing = true;
             if(m_imshow.compare("All") == 0)
-              cv::namedWindow("RTSP stream thread", cv::WINDOW_NORMAL);
+              cv::namedWindow("RawVideo", cv::WINDOW_NORMAL);
             cv::Mat frame_temp;
             while(!isStopping())
             {
