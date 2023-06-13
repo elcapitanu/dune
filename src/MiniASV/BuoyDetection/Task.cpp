@@ -45,6 +45,21 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/video/tracking.hpp>
 
+double getYValue(double pixels)
+{
+  // Coefficients obtained from previous calculation
+  double coeffs[3] = {2.21916367e-04, -5.32765161e-07, 5.24004043e-10};
+
+  double y_value = 0.0;
+
+  for (int i = 0; i < 3; i++)
+  {
+    y_value += coeffs[i] * std::pow(pixels, i);
+  }
+
+  return y_value;
+}
+
 namespace MiniASV
 {
   namespace BuoyDetection
@@ -176,6 +191,11 @@ namespace MiniASV
       void
       onMain(void)
       {
+        double coord_x = 0;
+        double coord_y = 0;
+        double buoy_x = 0;
+        double buoy_y = 0;
+
         // Create Kalman filter
         cv::KalmanFilter kf(4, 2, 0);
         cv::Mat state(4, 1, CV_32F); // [x, y, Vx, Vy]
@@ -246,6 +266,40 @@ namespace MiniASV
                 cv::Point estimatedPos(estimated.at<float>(0), estimated.at<float>(1));
                 cv::circle(m_frame, predicted, 5, cv::Scalar(0, 0, 255), -1);
                 cv::circle(m_frame, estimatedPos, 5, cv::Scalar(0, 255, 0), -1);
+
+                // Find the leftmost and rightmost points on the contour
+                cv::Point leftmost = contours[maxAreaIdx][0];
+                cv::Point rightmost = contours[maxAreaIdx][0];
+                for (int i = 1; i < contours[maxAreaIdx].size(); i++)
+                {
+                  if (contours[maxAreaIdx][i].x < leftmost.x)
+                    leftmost = contours[maxAreaIdx][i];
+                  if (contours[maxAreaIdx][i].x > rightmost.x)
+                    rightmost = contours[maxAreaIdx][i];
+                }
+
+                // Calculate the pixel distance between leftmost and rightmost points
+                int pixelDistance = abs(rightmost.x - leftmost.x);
+
+                printf("Width of the buoy %d \n", pixelDistance);
+
+                double y_value = getYValue(pixelDistance);
+                std::cout << "The corresponding value on the Y-axis for " << pixelDistance << " pixels is: " << y_value << std::endl;
+
+                double new_value = 10.0 / (pixelDistance * y_value);
+                std::cout << new_value << " cm" << std::endl;
+
+                int ref_x = m_frame.cols / 2;
+                int x_desloc;
+
+                x_desloc = centroid.x - ref_x;
+
+                double dist_value = getYValue(x_desloc);
+                double real_x_dist = 10.0 / (x_desloc * dist_value);
+
+                buoy_x = coord_x + real_x_dist;
+                buoy_y = coord_y + new_value;
+                std::cout << "Coordenates of buoy are (" << buoy_x << "," << buoy_y << ")" << std::endl;
               }
 
               cv::imshow("ola", m_frame);
