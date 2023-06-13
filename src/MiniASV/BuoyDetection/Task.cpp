@@ -23,6 +23,8 @@
 // http://ec.europa.eu/idabc/eupl.html.                                     *
 //***************************************************************************
 // Author: Pedro Gonçalves                                                  *
+// Author: Bernardo Gabriel                                                 *
+// Author: Nuno Nascimento                                                  *
 //***************************************************************************
 
 // ISO C++ 98 headers.

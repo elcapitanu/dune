@@ -24,13 +24,16 @@
 // https://github.com/LSTS/dune/blob/master/LICENCE.md and                  *
 // http://ec.europa.eu/idabc/eupl.html.                                     *
 //***************************************************************************
-// Author: BGabriel                                                         *
+// Author: Bernardo Gabriel                                                 *
+// Author: Miguel Silva                                                     *
 //***************************************************************************
 
 // DUNE headers.
 #include <DUNE/DUNE.hpp>
+
 #include <DUNE/Coordinates/WGS84.hpp>
 #include <DUNE/Coordinates/General.hpp>
+
 #include <string.h>
 // #include "Controller.hpp"
 
