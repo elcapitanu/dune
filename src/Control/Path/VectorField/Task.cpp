@@ -312,14 +312,14 @@ namespace Control
 
           // Stay away from the pool wall
           // TODO: verify all walls
-          if (x_pos <= 1 || x_pos >= 24 || y_pos <= 1 || y_pos >= 24)
-          {
-            aux_x = 12.5 - x_pos;
-            aux_y = 12.5 - y_pos;
+          // if (x_pos <= 1 || x_pos >= 24 || y_pos <= 1 || y_pos >= 24)
+          // {
+          //   aux_x = 12.5 - x_pos;
+          //   aux_y = 12.5 - y_pos;
 
-            ref = std::atan2(aux_y, aux_x); // Always points to the center of the pool
-            spew("Bro too close to the WALL");
-          }
+          //   ref = std::atan2(aux_y, aux_x); // Always points to the center of the pool
+          //   spew("Bro too close to the WALL");
+          // }
 
           spew("Loop ref: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
 
