@@ -34,7 +34,7 @@
 // Import namespaces.
 using DUNE_NAMESPACES;
 
-//OpenCV headers
+// OpenCV headers
 #include <opencv2/highgui.hpp>
 #include <opencv2/videoio.hpp>
 
@@ -47,143 +47,190 @@ namespace MiniASV
 
     class CaptureImage : public Concurrency::Thread
     {
-      public:
-        //! Url of video capture
-        std::string m_url;
+    public:
+      //! Url of video capture
+      std::string m_url;
 
-        //! Constructor.
-        //! @param[in] task parent task.
-        //! @param[in] url of ipcam.
-        //! @param[in] imshow display
-        CaptureImage(DUNE::Tasks::Task* task, std::string url, std::string imshow) :
-          m_task(task),
-          m_is_capturing(false)
-        {
-          m_imshow = imshow;
-          m_url = url;
-          cv::setNumThreads(4);
-          m_capture = initCapture(m_url);
-          m_wdog_cap_erro.setTop(1.0);
-          m_counter_erro_frame = 0;
-        }
+      Address *address;
+      UDPSocket *m_socket;
 
-        //! Destructor.
-        ~CaptureImage(void)
-        {
-          m_capture.release();
-          if(m_imshow.compare("All") == 0 || m_imshow.compare("Cap") == 0)
-            cv::destroyAllWindows();
-        }
+      //! Constructor.
+      //! @param[in] task parent task.
+      //! @param[in] url of ipcam.
+      //! @param[in] imshow display
+      CaptureImage(DUNE::Tasks::Task *task, std::string url, std::string imshow, std::string ip_app) : m_task(task),
+                                                                                   m_is_capturing(false)
+      {
+        m_imshow = imshow;
+        m_ip_app = ip_app;
+        m_url = url;
+        cv::setNumThreads(4);
+        m_capture = initCapture(m_url);
+        m_wdog_cap_erro.setTop(1.0);
+        m_counter_erro_frame = 0;
+      }
 
-        cv::VideoCapture
-        initCapture(std::string url)
+      //! Destructor.
+      ~CaptureImage(void)
+      {
+        m_capture.release();
+        if (m_imshow.compare("All") == 0 || m_imshow.compare("Cap") == 0)
+          cv::destroyAllWindows();
+      }
+
+      cv::VideoCapture
+      initCapture(std::string url)
+      {
+        if (url.find("video") != std::string::npos)
         {
-          if (url.find("video") != std::string::npos)
+          cv::VideoCapture capture(0);
+          if (!capture.isOpened())
           {
-            cv::VideoCapture capture(0);
-            if (!capture.isOpened())
-            {
-              m_task->err("erro open cam device %s", url.c_str());
-              cv::VideoCapture capture_null(0, 0);
-              return capture_null;
-            }
-            return capture;
+            m_task->err("erro open cam device %s", url.c_str());
+            cv::VideoCapture capture_null(0, 0);
+            return capture_null;
           }
-          else
-          {
-            setenv("OPENCV_FFMPEG_CAPTURE_OPTIONS", "rtsp_transport;udp", 1);
-            cv::VideoCapture capture(url, cv::CAP_FFMPEG);
-            if (!capture.isOpened())
-            {
-              m_task->err("erro open cam url %s", url.c_str());
-              cv::VideoCapture capture_null(0, 0);
-              return capture_null;
-            }
-            return capture;
-          }
+          return capture;
         }
-
-        void
-        run(void)
+        else
         {
-          if (!m_capture.isOpened())
+          setenv("OPENCV_FFMPEG_CAPTURE_OPTIONS", "rtsp_transport;udp", 1);
+          cv::VideoCapture capture(url, cv::CAP_FFMPEG);
+          if (!capture.isOpened())
           {
-            m_task->err("erro capture video device");
-            m_is_capturing = false;
+            m_task->err("erro open cam url %s", url.c_str());
+            cv::VideoCapture capture_null(0, 0);
+            return capture_null;
           }
-          else
+          return capture;
+        }
+      }
+
+      void
+      run(void)
+      {
+        if (!m_capture.isOpened())
+        {
+          m_task->err("erro capture video device");
+          m_is_capturing = false;
+        }
+        else
+        {
+          m_is_capturing = true;
+          if (m_imshow.compare("All") == 0)
+            cv::namedWindow("RawVideo", cv::WINDOW_NORMAL);
+
+          try
           {
-            m_is_capturing = true;
-            if(m_imshow.compare("All") == 0)
-              cv::namedWindow("RawVideo", cv::WINDOW_NORMAL);
-            cv::Mat frame_temp;
-            while(!isStopping())
+            address = new Address(m_ip_app.c_str());
+            m_socket = new UDPSocket;
+
+            // int flags = fcntl(*m_socket, F_GETFL, 0);
+            // flags |= O_NONBLOCK;
+            // fcntl(*m_socket, F_SETFL, flags);
+
+            m_task->spew(DTR("Server started..."));
+          }
+          catch (std::runtime_error &e)
+          {
+            throw RestartNeeded(e.what(), 5);
+          }
+
+          cv::Mat frame_temp;
+          while (!isStopping())
+          {
+            if (!m_capture.read(frame_temp))
             {
-              if (!m_capture.read(frame_temp))
+              if (m_wdog_cap_erro.overflow())
               {
-                if(m_wdog_cap_erro.overflow())
+                m_wdog_cap_erro.reset();
+                m_counter_erro_frame++;
+                m_task->war("fail getting frame");
+                if (m_counter_erro_frame >= 5)
                 {
-                  m_wdog_cap_erro.reset();
-                  m_counter_erro_frame++;
-                  m_task->war("fail getting frame");
-                  if(m_counter_erro_frame >= 5)
+                  m_counter_erro_frame = 0;
+                  try
                   {
-                    m_counter_erro_frame = 0;
-                    try
-                    {
-                      m_capture.release();
-                    }
-                    catch(const std::exception& e)
-                    {}
-                    m_capture = initCapture(m_url);
-                    m_task->war("resetting camara.");
+                    m_capture.release();
                   }
+                  catch (const std::exception &e)
+                  {
+                  }
+                  m_capture = initCapture(m_url);
+                  m_task->war("resetting camara.");
                 }
               }
-              else
+            }
+            else
+            {
+              m_counter_erro_frame = 0;
+              m_frame = frame_temp.clone();
+              if (m_imshow.compare("All") == 0 || m_imshow.compare("Input") == 0)
               {
-                m_counter_erro_frame = 0;
-                m_frame = frame_temp.clone();
-                if(m_imshow.compare("All") == 0 || m_imshow.compare("Input") == 0)
+                cv::imshow("RTSP stream thread", frame_temp);
+                cv::waitKey(1);
+
+                // Encode the frame as JPEG
+                std::vector<uchar> encodedFrame;
+                cv::imencode(".jpg", frame_temp, encodedFrame, {cv::IMWRITE_JPEG_QUALITY, 20});
+
+                // Serialize frame
+                std::vector<uint8_t> data(encodedFrame.begin(), encodedFrame.end());
+
+                const uint8_t* buf = data.data();
+                int size = data.size();
+
+                int chunkSize = 65000;
+                int remainingSize = size;
+
+                int step = 0;
+                m_task->war("Vou mandar uma iamgem: %d", size);
+
+                for (int i = 0; i < size; i += chunkSize)
                 {
-                  //cv::imshow("RTSP stream thread", frame_temp);
-                  //cv::waitKey(1);
+                  m_task->war("Step: %d", step++);
+                  int currentSize = std::min(chunkSize, remainingSize);
+                  m_socket->write(buf + i, currentSize, *address, 8888);
+                  remainingSize -= currentSize;
                 }
+
               }
             }
           }
         }
+      }
 
-        bool
-        isCapturing(void)
-        {
-          return m_is_capturing;
-        }
+      bool
+      isCapturing(void)
+      {
+        return m_is_capturing;
+      }
 
-        cv::Mat
-        getFrame(void)
-        {
-          return m_frame;
-        }
+      cv::Mat
+      getFrame(void)
+      {
+        return m_frame;
+      }
 
-      private:
-        //! Parent task.
-        DUNE::Tasks::Task* m_task;
-        //! OpenCv Video Capture
-        cv::VideoCapture m_capture;
-        //! Flag to control state of capture
-        bool m_is_capturing;
-        //! Flag to control imshow
-        std::string m_imshow;
-        //! Buffer for image captured
-        cv::Mat m_frame;
-        //! Watchdog for erro capture info
-        Counter<double> m_wdog_cap_erro;
-        //! Counter of frames fail
-        int m_counter_erro_frame;
+    private:
+      //! Parent task.
+      DUNE::Tasks::Task *m_task;
+      //! OpenCv Video Capture
+      cv::VideoCapture m_capture;
+      //! Flag to control state of capture
+      bool m_is_capturing;
+      //! Flag to control imshow
+      std::string m_imshow;
+      //! Flag to control imshow
+      std::string m_ip_app;
+      //! Buffer for image captured
+      cv::Mat m_frame;
+      //! Watchdog for erro capture info
+      Counter<double> m_wdog_cap_erro;
+      //! Counter of frames fail
+      int m_counter_erro_frame;
     };
   }
 }
 
 #endif
-

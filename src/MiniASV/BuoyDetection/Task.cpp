@@ -83,6 +83,8 @@ namespace MiniASV
       std::vector<int> saturation_interval;
       //! Value interval
       std::vector<int> value_interval;
+      //! Ip address of APP
+      std::string ip_app;
     };
 
     //! Task.
@@ -139,6 +141,11 @@ namespace MiniASV
             .defaultValue("40")
             .size(2)
             .description("Value Interval");
+
+        param("Ip App", m_args.ip_app)
+            .visibility(Tasks::Parameter::VISIBILITY_DEVELOPER)
+            .defaultValue("192.168.57.71")
+            .description("Ip address of APP");
       }
 
       void
@@ -149,7 +156,7 @@ namespace MiniASV
       void
       onResourceInitialization(void)
       {
-        m_cap = new CaptureImage(this, m_args.url, m_args.imshow);
+        m_cap = new CaptureImage(this, m_args.url, m_args.imshow, m_args.ip_app);
         m_cap->start();
         m_task_ready = true;
       }
@@ -163,7 +170,6 @@ namespace MiniASV
           delete m_cap;
         }
       }
-
 
       void
       onRequestActivation(void)
@@ -211,23 +217,6 @@ namespace MiniASV
         cv::Scalar lowerHSV(0, 100, 0);
         cv::Scalar upperHSV(10, 255, 255);
 
-        // // Define the RTSP stream URL
-        // // Replace "rtsp://<username>:<password>@<server_ip>:<port>/<stream_path>" with your actual RTSP stream URL
-        // std::string rtspUrl = "rtsp://<username>:<password>@<server_ip>:<port>/<stream_path>";
-
-        // // Get the codec for writing the video stream
-        // int codec = cv::VideoWriter::fourcc('H', '2', '6', '4');
-
-        // // Create a VideoWriter object for RTSP streaming
-        // cv::VideoWriter rtspStream(rtspUrl, codec, 10.0, cv::Size(640, 480));
-
-        // // Check if the VideoWriter object was created successfully
-        // if (!rtspStream.isOpened())
-        // {
-        //   std::cout << "Error opening RTSP stream." << std::endl;
-        //   return -1;
-        // }
-
         cv::Mat m_frame;
 
         while (!stopping())
@@ -238,9 +227,7 @@ namespace MiniASV
           {
             m_frame = m_cap->getFrame();
             if (!m_frame.empty())
-            {
-              // rtspStream.write(m_frame);
-
+            {           
               cv::Mat frameHSV, mask;
               cv::cvtColor(m_frame, frameHSV, cv::COLOR_BGR2HSV);
               cv::inRange(frameHSV, lowerHSV, upperHSV, mask);
@@ -314,7 +301,6 @@ namespace MiniASV
                 double dist_value = getYValue(x_desloc);
                 double real_x_dist = 10.0 / (x_desloc * dist_value);
 
-
                 double angle = atan2(real_x_dist, dist_to_img_plane);
                 double dist_to_object = std::hypot(dist_to_img_plane, real_x_dist);
 
@@ -325,14 +311,12 @@ namespace MiniASV
 
                 std::cout << "Angle : " << angle << " and Magnitude : " << dist_to_object << std::endl;
                 dispatch(m_gen);
-                //buoy_x = coord_x + real_x_dist;
-                //buoy_y = coord_y + dist_to_img_plane;
-                //std::cout << "Coordenates of buoy are (" << buoy_x << "," << buoy_y << ")" << std::endl;
-
-                
+                // buoy_x = coord_x + real_x_dist;
+                // buoy_y = coord_y + dist_to_img_plane;
+                // std::cout << "Coordenates of buoy are (" << buoy_x << "," << buoy_y << ")" << std::endl;
               }
 
-              //cv::imshow("ola", m_frame);
+              // cv::imshow("ola", m_frame);
             }
           }
         }
