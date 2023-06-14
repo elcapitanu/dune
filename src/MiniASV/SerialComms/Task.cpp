@@ -55,6 +55,8 @@ namespace MiniASV
       int number_attempts;
       //! Angle offset inc case IMU is acting up
       float angle_offset;
+      //! Value to limit motor actuation
+      float motor_limit;
     };
 
     struct Task : public DUNE::Tasks::Task
@@ -103,9 +105,15 @@ namespace MiniASV
             .units(Units::Second)
             .description("Amount of seconds to wait for data before reporting an error");
 
-            param("Angle Offset", m_args.angle_offset)
+        param("Angle Offset", m_args.angle_offset)
             .defaultValue("0")
             .description("Angle offset inc case IMU's bussola is acting up");
+
+        param("Motor Limitation", m_args.motor_limit)
+            .defaultValue("25.0")
+            .minimumValue("0.0")
+            .maximumValue("100.0")
+            .description("Value to limit motor actuation");
 
         bind<IMC::SetThrusterActuation>(this);
       }
@@ -209,19 +217,19 @@ namespace MiniASV
 
         if (msg->id == 0)
         {
-          m_driver->m_miniASVData.pwmR = static_cast<int>(msg->getValueFP() * 25);
-          if (m_driver->m_miniASVData.pwmR > 30)
-            m_driver->m_miniASVData.pwmR = 30;
-          if (m_driver->m_miniASVData.pwmR < -30)
-            m_driver->m_miniASVData.pwmR = -30;
+          m_driver->m_miniASVData.pwmR = static_cast<int>(msg->getValueFP() * m_arg.motor_limit);
+          if (m_driver->m_miniASVData.pwmR > m_arg.motor_limit)
+            m_driver->m_miniASVData.pwmR = m_arg.motor_limit;
+          if (m_driver->m_miniASVData.pwmR < -m_arg.motor_limit)
+            m_driver->m_miniASVData.pwmR = -m_arg.motor_limit;
         }
         else if (msg->id == 1)
         {
-          m_driver->m_miniASVData.pwmL = static_cast<int>(msg->getValueFP() * 25);
-          if (m_driver->m_miniASVData.pwmL > 30)
-            m_driver->m_miniASVData.pwmL = 30;
-          if (m_driver->m_miniASVData.pwmL < -30)
-            m_driver->m_miniASVData.pwmL = -30;
+          m_driver->m_miniASVData.pwmL = static_cast<int>(msg->getValueFP() * m_arg.motor_limit);
+          if (m_driver->m_miniASVData.pwmL > m_arg.motor_limit)
+            m_driver->m_miniASVData.pwmL = m_arg.motor_limit;
+          if (m_driver->m_miniASVData.pwmL < -m_arg.motor_limit)
+            m_driver->m_miniASVData.pwmL = -m_arg.motor_limit;
         }
       }
 
@@ -233,9 +241,9 @@ namespace MiniASV
         m_eulerAngles.setTimeStamp(m_tstamp);
         m_eulerAngles.phi = (m_driver->m_miniASVData.roll) / Math::c_degrees_per_radian;
         m_eulerAngles.theta = (m_driver->m_miniASVData.pitch) / Math::c_degrees_per_radian;
-        m_eulerAngles.psi = Math::trimValue(-(m_driver->m_miniASVData.yaw) / Math::c_degrees_per_radian + Angles::radians(m_args.angle_offset), - Math::c_pi, Math::c_pi); // for some unkown reason I had to reserve the angle, in order to work
+        m_eulerAngles.psi = Math::trimValue(-(m_driver->m_miniASVData.yaw) / Math::c_degrees_per_radian + Angles::radians(m_args.angle_offset), -Math::c_pi, Math::c_pi); // for some unkown reason I had to reserve the angle, in order to work
         m_eulerAngles.psi_magnetic = m_eulerAngles.psi;
-        //war("YAW: %f", m_eulerAngles.psi);
+        // war("YAW: %f", m_eulerAngles.psi);
         dispatch(m_eulerAngles, DF_KEEP_TIME);
       }
 
@@ -267,7 +275,7 @@ namespace MiniASV
           send = String::str("@PWM,L,%d,*", m_driver->m_miniASVData.pwmL);
           m_driver->sendCommandNoRsp(send.c_str());
         }
-        
+
         m_uart->flush();
         m_driver->stopAcquisition();
       }
