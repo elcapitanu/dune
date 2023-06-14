@@ -98,6 +98,7 @@ namespace MiniASV
       Task(const std::string &name, Tasks::Context &ctx) : Tasks::Task(name, ctx),
                                                            m_task_ready(false)
       {
+
         paramActive(Tasks::Parameter::SCOPE_MANEUVER,
                     Tasks::Parameter::VISIBILITY_USER);
 
@@ -163,6 +164,7 @@ namespace MiniASV
         }
       }
 
+
       void
       onRequestActivation(void)
       {
@@ -191,10 +193,6 @@ namespace MiniASV
       void
       onMain(void)
       {
-        double coord_x = 0;
-        double coord_y = 0;
-        double buoy_x = 0;
-        double buoy_y = 0;
 
         // Create Kalman filter
         cv::KalmanFilter kf(4, 2, 0);
@@ -305,8 +303,8 @@ namespace MiniASV
                 double y_value = getYValue(pixelDistance);
                 std::cout << "The corresponding value on the Y-axis for " << pixelDistance << " pixels is: " << y_value << std::endl;
 
-                double new_value = 10.0 / (pixelDistance * y_value);
-                std::cout << new_value << " cm" << std::endl;
+                double dist_to_img_plane = 10.0 / (pixelDistance * y_value);
+                std::cout << dist_to_img_plane << " cm" << std::endl;
 
                 int ref_x = m_frame.cols / 2;
                 int x_desloc;
@@ -316,12 +314,25 @@ namespace MiniASV
                 double dist_value = getYValue(x_desloc);
                 double real_x_dist = 10.0 / (x_desloc * dist_value);
 
-                buoy_x = coord_x + real_x_dist;
-                buoy_y = coord_y + new_value;
-                std::cout << "Coordenates of buoy are (" << buoy_x << "," << buoy_y << ")" << std::endl;
+
+                double angle = atan2(real_x_dist, dist_to_img_plane);
+                double dist_to_object = std::hypot(dist_to_img_plane, real_x_dist);
+
+                IMC::FuelLevel m_gen;
+
+                m_gen.value = angle;
+                m_gen.confidence = dist_to_object;
+
+                std::cout << "Angle : " << angle << " and Magnitude : " << dist_to_object << std::endl;
+                dispatch(m_gen);
+                //buoy_x = coord_x + real_x_dist;
+                //buoy_y = coord_y + dist_to_img_plane;
+                //std::cout << "Coordenates of buoy are (" << buoy_x << "," << buoy_y << ")" << std::endl;
+
+                
               }
 
-              cv::imshow("ola", m_frame);
+              //cv::imshow("ola", m_frame);
             }
           }
         }
