@@ -217,19 +217,19 @@ namespace MiniASV
 
         if (msg->id == 0)
         {
-          m_driver->m_miniASVData.pwmR = static_cast<int>(msg->getValueFP() * m_arg.motor_limit);
-          if (m_driver->m_miniASVData.pwmR > m_arg.motor_limit)
-            m_driver->m_miniASVData.pwmR = m_arg.motor_limit;
-          if (m_driver->m_miniASVData.pwmR < -m_arg.motor_limit)
-            m_driver->m_miniASVData.pwmR = -m_arg.motor_limit;
+          m_driver->m_miniASVData.pwmR = static_cast<int>(msg->getValueFP() * m_args.motor_limit);
+          if (m_driver->m_miniASVData.pwmR > m_args.motor_limit)
+            m_driver->m_miniASVData.pwmR = m_args.motor_limit;
+          if (m_driver->m_miniASVData.pwmR < -m_args.motor_limit)
+            m_driver->m_miniASVData.pwmR = -m_args.motor_limit;
         }
         else if (msg->id == 1)
         {
-          m_driver->m_miniASVData.pwmL = static_cast<int>(msg->getValueFP() * m_arg.motor_limit);
-          if (m_driver->m_miniASVData.pwmL > m_arg.motor_limit)
-            m_driver->m_miniASVData.pwmL = m_arg.motor_limit;
-          if (m_driver->m_miniASVData.pwmL < -m_arg.motor_limit)
-            m_driver->m_miniASVData.pwmL = -m_arg.motor_limit;
+          m_driver->m_miniASVData.pwmL = static_cast<int>(msg->getValueFP() * m_args.motor_limit);
+          if (m_driver->m_miniASVData.pwmL > m_args.motor_limit)
+            m_driver->m_miniASVData.pwmL = m_args.motor_limit;
+          if (m_driver->m_miniASVData.pwmL < -m_args.motor_limit)
+            m_driver->m_miniASVData.pwmL = -m_args.motor_limit;
         }
       }
 
