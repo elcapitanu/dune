@@ -213,6 +213,23 @@ namespace MiniASV
         cv::Scalar lowerHSV(0, 100, 0);
         cv::Scalar upperHSV(10, 255, 255);
 
+        // // Define the RTSP stream URL
+        // // Replace "rtsp://<username>:<password>@<server_ip>:<port>/<stream_path>" with your actual RTSP stream URL
+        // std::string rtspUrl = "rtsp://<username>:<password>@<server_ip>:<port>/<stream_path>";
+
+        // // Get the codec for writing the video stream
+        // int codec = cv::VideoWriter::fourcc('H', '2', '6', '4');
+
+        // // Create a VideoWriter object for RTSP streaming
+        // cv::VideoWriter rtspStream(rtspUrl, codec, 10.0, cv::Size(640, 480));
+
+        // // Check if the VideoWriter object was created successfully
+        // if (!rtspStream.isOpened())
+        // {
+        //   std::cout << "Error opening RTSP stream." << std::endl;
+        //   return -1;
+        // }
+
         cv::Mat m_frame;
 
         while (!stopping())
@@ -224,6 +241,8 @@ namespace MiniASV
             m_frame = m_cap->getFrame();
             if (!m_frame.empty())
             {
+              // rtspStream.write(m_frame);
+
               cv::Mat frameHSV, mask;
               cv::cvtColor(m_frame, frameHSV, cv::COLOR_BGR2HSV);
               cv::inRange(frameHSV, lowerHSV, upperHSV, mask);
