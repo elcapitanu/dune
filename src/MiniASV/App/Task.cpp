@@ -7,10 +7,17 @@ namespace MiniASV
   {
     using DUNE_NAMESPACES;
 
+    struct Arguments
+    {
+      std::string plan;
+    };
+
     struct Task : public DUNE::Tasks::Task
     {
       // Socket handle.
       TCPSocket *m_socket;
+
+      Arguments m_args;
 
       double m_lat = 41.87254; // yes
       double m_lon = -8.26382; // yes
@@ -28,6 +35,11 @@ namespace MiniASV
       Task(const std::string &name, Tasks::Context &ctx) : DUNE::Tasks::Task(name, ctx),
                                                            m_socket(NULL)
       {
+
+        param("Main Execution Plan", m_args.plan)
+            .defaultValue("plano_teste_1")
+            .description("Serial port device used to communicate with the sensor");
+
         bind<IMC::GpsFix>(this);
         bind<IMC::Temperature>(this);
         bind<IMC::EulerAngles>(this);
@@ -185,6 +197,23 @@ namespace MiniASV
               {
                 inf("Executing Task 3");
                 std::string message = "ACK Task3";
+
+                // FIXME: not tested with App
+
+                IMC::PlanControl p_control; //= new IMC::PlanControl();
+                // IMC::PlanSpecification *ps = new IMC::PlanSpecification();
+
+                p_control.type = IMC::PlanControl::PC_REQUEST;
+                p_control.op = IMC::PlanControl::PC_START;
+                // p_control.request_id = 151;
+                p_control.flags = IMC::PlanControl::FLG_IGNORE_ERRORS;
+                p_control.setDestination(getSystemId());
+                // p_control->setDestinationEntity(getEntityId());
+                p_control.plan_id = m_args.plan;
+                // p_control->arg.set(*ps);
+                // p_control->info = "Will this finally work?"; // Useless ahah
+                dispatch(p_control);
+
                 client_socket->write(message.c_str(), message.size());
                 m_current_task = 3;
               }
