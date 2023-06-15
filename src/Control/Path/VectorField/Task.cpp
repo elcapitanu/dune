@@ -58,6 +58,8 @@ namespace Control
         double ext_trgain;
         float obs_x, obs_y;
         float in_radius, out_radius;
+        double x_size, y_size, theta_rot;
+        double ini_lat, ini_lon;
       };
 
       struct Task : public DUNE::Control::PathController
@@ -69,8 +71,15 @@ namespace Control
         //! Task arguments.
         Arguments m_args;
 
-        double big_lon = -8.59896405, small_lon = -8.5991518;
-        double big_lat = 41.17539860, small_lat = 41.17507457;
+        // From an older version
+        // double big_lon = -8.59896405, small_lon = -8.5991518;
+        // double big_lat = 41.17539860, small_lat = 41.17507457;
+
+        // probably tune these values
+        // double end_lat = 41.17548882;
+        // double end_lon = -8.59897327;
+        // double ini_lat = 41.17515267;
+        // double ini_lon = -8.59909967;
 
         Task(const std::string &name, Tasks::Context &ctx) : DUNE::Control::PathController(name, ctx)
         {
@@ -101,12 +110,12 @@ namespace Control
               .description("Turn rate gain for extended control");
 
           param("Obstacle Avoidance -- x", m_args.obs_x)
-              .defaultValue("12.5")
-              .description("Position of obstacle in coordinate x");
+              .defaultValue("40")
+              .description("Position of obstacle in coordinate x from 0 to 20");
 
           param("Obstacle Avoidance -- y", m_args.obs_y)
-              .defaultValue("1")
-              .description("Position of obstacle in coordinate y");
+              .defaultValue("40")
+              .description("Position of obstacle in coordinate y from 0 to 20");
 
           param("Obstacle Avoidance -- in_radius", m_args.in_radius)
               .defaultValue("3.5")
@@ -115,6 +124,32 @@ namespace Control
           param("Obstacle Avoidance -- out_radius", m_args.out_radius)
               .defaultValue("5")
               .description("Distância em que começa o desvio do obstáculo");
+
+          param("Area Design -- x_meters", m_args.x_size)
+              .defaultValue("37")
+              .description("Pool x size, pointing North");
+
+          param("Area Design -- y_meters", m_args.y_size)
+              .defaultValue("10.5")
+              .description("Pool y size, pointing North East");
+
+          param("Area Design -- theta_rot", m_args.theta_rot)
+              .defaultValue("20")
+              .description("Pool rotation related to North");
+
+          param("Area Design -- Initial latitude", m_args.ini_lat)
+              .defaultValue("41.17515267")
+              .description("Origin latitude referential");
+
+          param("Area Design -- Initial longitude", m_args.ini_lon)
+              .defaultValue("-8.59909967")
+              .description("Origin longitude referential");
+          // .units(Units::DegreePerSecond)
+
+          // val I want to compare lat:
+          // 41.17546157
+          // val I want to compare lon:
+          // -8.59895583
         }
 
         void
@@ -141,40 +176,51 @@ namespace Control
           enableControlLoops(IMC::CL_YAW);
         }
 
+        /************FEP COORDINATESS***************/
         // IE: 41.17513715, -8.5991518
         // SE: 41.17546118, -8.59900295
         // ID: 41.17507457, -8.59896405
         // SD: 41.17539860, -8.59881385
 
+        /***********APD COORDINATES *********/
         // IE: 41.18365977, -8.70836583
         // SE: 41.18388433, -8.70836548
         // ID: 41.18365927, -8.7080671
         // SD: 41.18388408, -8.70806743
 
-        double
-        x_pos_to_latitude(double x)
-        {
-          return (x - 0) * (big_lat - small_lat) / (25 - 0) + small_lat;
-        }
+        /*      FIXME: these won't work onde uncommented
+                // double
+                // x_pos_to_latitude(double x)
+                // {
 
-        double
-        y_pos_to_longitude(double y)
-        {
-          return (y - 0) * (big_lon - small_lon) / (25 - 0) + small_lon;
-        }
+                //   return (x - 0) * (big_lat - small_lat) / (25 - 0) + small_lat;
+                // }
 
+                // double
+                // y_pos_to_longitude(double y)
+                // {
+                //   return (y - 0) * (big_lon - small_lon) / (25 - 0) + small_lon;
+                // }
+        */
         //! In meters
         double
         latitude_to_x_pos(double lat)
         {
-          return (lat - small_lat) * (25 - 0) / (big_lat - small_lat) + 0;
+          // double help = (double)0.001 / (double)111;
+          double help = 0.000009071;
+          double end_lat = m_args.ini_lat + (m_args.x_size * help);
+          return (lat - m_args.ini_lat) * (m_args.x_size - 0) / (end_lat - m_args.ini_lat) + 0;
+          // return (lat - m_args.ini_lat) * (20 - 0) / (end_lat - m_args.ini_lat) + 0;
         }
 
         //! In meters
         double
         longitude_to_y_pos(double lon)
         {
-          return (lon - small_lon) * (25 - 0) / (big_lon - small_lon) + 0;
+          double help = 0.000012249;
+          double end_lon = m_args.ini_lon + (m_args.y_size * help);
+          return (lon - m_args.ini_lon) * (m_args.y_size - 0) / (end_lon - m_args.ini_lon) + 0;
+          // return (lon - m_args.ini_lon) * (20 - 0) / (end_lon - m_args.ini_lon) + 0;
         }
 
         //! Execute a path control step
@@ -194,8 +240,11 @@ namespace Control
           double ref = 0; // Radians of vector
 
           // for testing
-          double obs_x = m_args.obs_x;
-          double obs_y = m_args.obs_y;
+          double obs_x = m_args.obs_x / 20 * m_args.x_size;
+          double obs_y = m_args.obs_y / 20 * m_args.y_size;
+
+          // double obs_x = m_args.obs_x;
+          // double obs_y = m_args.obs_y;
 
           double in_radius = m_args.in_radius, out_radius = m_args.out_radius;
           double x_pos, y_pos;
@@ -205,8 +254,20 @@ namespace Control
           x_pos = DUNE::Math::Angles::degrees(x_pos);      // radians to degrees
           y_pos = DUNE::Math::Angles::degrees(y_pos);      // radians to degrees
 
-          x_pos = latitude_to_x_pos(x_pos);  // degrees to pool
-          y_pos = longitude_to_y_pos(y_pos); // degrees to pool
+          // begin of Calculation_test
+          double hypotenuse = sqrt(pow((m_args.ini_lat - x_pos), 2) + pow((m_args.ini_lon - y_pos), 2));
+          double referencial_angle = std::acos((x_pos - m_args.ini_lat) / hypotenuse);
+          double cateto_adj = m_args.ini_lat + (hypotenuse * std::cos(referencial_angle - Angles::radians(m_args.theta_rot)));
+          double cateto_opt = m_args.ini_lon + (hypotenuse * std::sin(referencial_angle - Angles::radians(m_args.theta_rot)));
+
+          // double x_pos_2 = (cateto_adj - ini_lat) * (25 - 0) / (end_lat - ini_lat) + 0;
+          // double y_pos_2 = (cateto_opt - ini_lon) * (25 - 0) / (end_lon - ini_lon) + 0; // degrees to pool
+
+          // end of Calculation test
+          // TODO: add changing capabilities of distance to .ini!
+
+          x_pos = latitude_to_x_pos(cateto_adj);  // degrees to pool
+          y_pos = longitude_to_y_pos(cateto_opt); // degrees to pool
 
           double in_x = abs(obs_x - x_pos);
           double in_y = abs(obs_y - y_pos);
@@ -214,7 +275,7 @@ namespace Control
 
           double in_abs = sqrt(pow(in_x, 2) + pow(in_y, 2));
 
-          spew("Pos(X, Y): %.2f, %.2f -> ABS: %.2f", x_pos, y_pos, in_abs);
+          inf("Pos(X, Y, angle): %.2f, %.2f, %.2f -> ABS: %.2f ", x_pos, y_pos, Angles::degrees(referencial_angle) - 20, in_abs);
 
           double x_final = x_pos + ts.range * cos(ts.los_angle);
           double y_final = y_pos + ts.range * sin(ts.los_angle);
@@ -280,30 +341,30 @@ namespace Control
 
               if (in_abs >= in_radius)
               {
-                spew("out radius initial: %.2f", Angles::degrees(Angles::normalizeRadian(ref)));
-                if (laranja)
+                inf("out radius initial: %.2f", Angles::degrees(Angles::normalizeRadian(ref)));
+                // if (laranja)
+                // {
+                //   ref -= DUNE::Math::Angles::radians(90) - DUNE::Math::Angles::radians(10);
+                // }
+                // else
+                // {
+                //   ref += DUNE::Math::Angles::radians(90) + DUNE::Math::Angles::radians(10);
+                // }
+
+                // Works with this <3
+                if (leaving_angle > DUNE::Math::Angles::radians(90))
                 {
-                  ref -= DUNE::Math::Angles::radians(90) - DUNE::Math::Angles::radians(10);
+                  ref -= DUNE::Math::Angles::radians(90) - DUNE::Math::Angles::radians(20); // Extra value to make ti a little more agressive
                 }
                 else
                 {
-                  ref += DUNE::Math::Angles::radians(90) + DUNE::Math::Angles::radians(10);
+                  ref += DUNE::Math::Angles::radians(90) + DUNE::Math::Angles::radians(20); // Extra value to make ti a little more agressive
                 }
-
-                //   // Works with this <3
-                //   if (leaving_angle > DUNE::Math::Angles::radians(90))
-                //   {
-                //     ref -= DUNE::Math::Angles::radians(90) - DUNE::Math::Angles::radians(10); // Extra value to make ti a little more agressive
-                //   }
-                //   else
-                //   {
-                //     ref += DUNE::Math::Angles::radians(90) + DUNE::Math::Angles::radians(10); // Extra value to make ti a little more agressive
-                //   }
-                //   spew("out radius final: %.2f", Angles::degrees(Angles::normalizeRadian(ref)));
+                inf("out radius final: %.2f", Angles::degrees(Angles::normalizeRadian(ref)));
               }
               else
               {
-                spew("Inside Radius overwrite: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
+                inf("Inside Radius overwrite: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
               }
             }
 
@@ -321,14 +382,14 @@ namespace Control
           //   spew("Bro too close to the WALL");
           // }
 
-          spew("Loop ref: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
+          inf("Loop ref: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
 
           if (ts.cc)
             ref += state.psi - ts.course; // course control rather than yaw control
 
-          spew("lte=%0.1f cadj=%0.1f attack=%0.1f", std::fabs(ts.track_pos.y),
-               Angles::degrees(Angles::normalizeRadian(std::fabs(state.psi - std::atan2(state.vy, state.vx)))),
-               Angles::degrees(Angles::normalizeRadian(std::fabs(ts.track_bearing - ref))));
+          debug("lte=%0.1f cadj=%0.1f attack=%0.1f", std::fabs(ts.track_pos.y),
+                Angles::degrees(Angles::normalizeRadian(std::fabs(state.psi - std::atan2(state.vy, state.vx)))),
+                Angles::degrees(Angles::normalizeRadian(std::fabs(ts.track_bearing - ref))));
 
           // Dispatch heading reference
           m_heading.value = Angles::normalizeRadian(ref);
