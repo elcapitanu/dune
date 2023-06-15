@@ -132,6 +132,13 @@ namespace MiniASV
         inf("Plan Maneuver -- Man ID: %s", pm->maneuver_id.c_str());
       }
 
+      /*******NEW COORDINATES TO TRANSFORMATE******/
+
+      // SE: 41.17548328 , -8.59915398
+      // ID: 41.17513502 , -8.59895417
+      // IE: 41.17513502 , -8.59915398
+      // theta = +/- 20º
+
       //! Main loop.
       void onMain(void)
       {
@@ -152,6 +159,12 @@ namespace MiniASV
       }
     };
   }
+
+  /*******COORDINATES BERNARDO NADADOR********/
+  // IE:  41.17513742, -8.59913002
+  // id: 41.17513893, -8.5989, 9288
+  // se: 41.17542537, -8.59899222
+
 }
 
 DUNE_TASK

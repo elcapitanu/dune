@@ -53,6 +53,8 @@ namespace MiniASV
       double input_timeout;
       //! Number of attempts before error
       int number_attempts;
+      //! Angle offset inc case IMU is acting up
+      float angle_offset;
     };
 
     struct Task : public DUNE::Tasks::Task
@@ -98,6 +100,10 @@ namespace MiniASV
             .maximumValue("4.0")
             .units(Units::Second)
             .description("Amount of seconds to wait for data before reporting an error");
+
+            param("Angle Offset", m_args.angle_offset)
+            .defaultValue("0")
+            .description("Angle offset inc case IMU's bussola is acting up");
 
         bind<IMC::SetThrusterActuation>(this);
       }
@@ -165,23 +171,32 @@ namespace MiniASV
       void
       initBoard()
       {
+        bool firmware = true, start = true;
         m_driver->stopAcquisition();
 
         if (!m_driver->getVersionFirmware())
         {
-          setEntityState(IMC::EntityState::ESTA_NORMAL, Utils::String::str(DTR("trying connecting to board")));
+          setEntityState(IMC::EntityState::ESTA_ERROR, Utils::String::str(DTR("trying connecting to board")));
           war(DTR("failed to get firmware version"));
+          firmware = false;
         }
 
         if (!m_driver->startAcquisition())
         {
-          setEntityState(IMC::EntityState::ESTA_NORMAL, Utils::String::str(DTR("trying connecting to board")));
+          setEntityState(IMC::EntityState::ESTA_ERROR, Utils::String::str(DTR("trying connecting to board")));
           war(DTR("failed to start"));
+          start = false;
         }
 
-        debug("Init OK");
-        m_wdog.setTop(m_args.input_timeout);
-        m_wdog.reset();
+        if (firmware && start)
+        {
+          setEntityState(IMC::EntityState::ESTA_NORMAL, Status::CODE_ACTIVE);
+          debug("Init OK");
+          m_wdog.setTop(m_args.input_timeout);
+          m_wdog.reset();
+        }
+        else
+          setEntityState(IMC::EntityState::ESTA_ERROR, Utils::String::str(DTR("trying connecting to board")));
       }
 
       void
@@ -211,10 +226,11 @@ namespace MiniASV
         m_tstamp = Clock::getSinceEpoch();
 
         m_eulerAngles.setTimeStamp(m_tstamp);
-        m_eulerAngles.phi = 0;
-        m_eulerAngles.theta = 0;
-        m_eulerAngles.psi = (m_driver->m_miniASVData.yaw)/Math::c_degrees_per_radian;
-        m_eulerAngles.psi_magnetic = (m_driver->m_miniASVData.yaw)/Math::c_degrees_per_radian;
+        m_eulerAngles.phi = (m_driver->m_miniASVData.roll) / Math::c_degrees_per_radian;
+        m_eulerAngles.theta = (m_driver->m_miniASVData.pitch) / Math::c_degrees_per_radian;
+        m_eulerAngles.psi = Math::trimValue(-(m_driver->m_miniASVData.yaw) / Math::c_degrees_per_radian + Angles::radians(m_args.angle_offset), - Math::c_pi, Math::c_pi); // for some unkown reason I had to reserve the angle, in order to work
+        m_eulerAngles.psi_magnetic = m_eulerAngles.psi;
+        //war("YAW: %f", m_eulerAngles.psi);
         dispatch(m_eulerAngles, DF_KEEP_TIME);
       }
 
@@ -246,9 +262,7 @@ namespace MiniASV
           send = String::str("@PWM,L,%d,*", m_driver->m_miniASVData.pwmL);
           m_driver->sendCommandNoRsp(send.c_str());
         }
-
-        Delay::wait(0.1);
-
+        
         m_uart->flush();
         m_driver->stopAcquisition();
       }

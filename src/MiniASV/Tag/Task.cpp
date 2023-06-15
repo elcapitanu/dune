@@ -50,6 +50,8 @@ namespace MiniASV
       double input_timeout;
       //! Number of attempts before error
       int number_attempts;
+      //! Distance between anchors
+      int dist_anchors;
     };
 
     struct Task : public DUNE::Tasks::Task
@@ -64,6 +66,8 @@ namespace MiniASV
       Counter<double> m_wdog;
       //! IMC msg
       IMC::DeviceState m_position;
+      //! GPS
+      IMC::GpsFix m_gps;
       //! Read timestamp.
       double m_tstamp;
       //! Distances
@@ -71,6 +75,7 @@ namespace MiniASV
       float m_distance2 = 0;
       //! Position
       float m_x;
+      float i = 0;
       float m_y;
 
       char bfr[128];
@@ -94,6 +99,13 @@ namespace MiniASV
             .maximumValue("4.0")
             .units(Units::Second)
             .description("Amount of seconds to wait for data before reporting an error");
+
+        param("Distance Between Anchors", m_args.dist_anchors)
+            .defaultValue("4.0")
+            .minimumValue("1.0")
+            .maximumValue("20.0")
+            .units(Units::Meter)
+            .description("Distance between UWB Anchors");
       }
 
       //! Update internal state with new parameter values.
@@ -118,11 +130,12 @@ namespace MiniASV
       void
       onResourceAcquisition(void)
       {
+
         setEntityState(IMC::EntityState::ESTA_BOOT, Status::CODE_INIT);
         try
         {
           m_uart = new SerialPort(m_args.uart_dev, m_args.uart_baud);
-          m_uart->setCanonicalInput(true);
+          m_uart->setCanonicalInput(true); // waits for terminator caharacter
           m_uart->flush();
           m_poll.add(*m_uart);
         }
@@ -140,6 +153,8 @@ namespace MiniASV
         Delay::wait(1.0f);
         m_wdog.setTop(m_args.input_timeout);
         m_wdog.reset();
+
+        setEntityState(IMC::EntityState::ESTA_NORMAL, Status::CODE_ACTIVE);
       }
 
       //! Release resources.
@@ -153,14 +168,35 @@ namespace MiniASV
           } */
       }
 
+      double
+      x_pos_to_latitude(double x)
+      {
+        return (x - 0) * (41.18388408 - 41.18365927) / (m_args.dist_anchors - 0) + 41.18365927;
+      }
+
+      double
+      y_pos_to_longitude(double y)
+      {
+        return (y - 0) * (-8.7080671 - -8.70836583) / (m_args.dist_anchors - 0) - 8.70836583;
+      }
+
       void dispatchData()
       {
+        // m_gps.type = IMC::GpsFix::GFT_MANUAL_INPUT;
+
         m_tstamp = Clock::getSinceEpoch();
-        m_position.setTimeStamp(m_tstamp);
-        m_position.x = m_x;
-        m_position.y = m_y;
-        m_position.z = 0;
-        dispatch(m_position, DF_KEEP_TIME);
+        m_gps.setTimeStamp(m_tstamp);
+        m_gps.lat = x_pos_to_latitude(m_x);
+        m_gps.lon = y_pos_to_longitude(m_y);
+        m_gps.lat = Angles::radians(m_gps.lat);
+        m_gps.lon = Angles::radians(m_gps.lon);
+
+        // m_gps.lat = Angles::radians(41.18529547);
+        // m_gps.lon = Angles::radians(-8.7080671);
+
+        m_gps.validity = IMC::GpsFix::GFV_VALID_POS;
+        dispatch(m_gps, DF_KEEP_TIME);
+        // inf("TAG:(x, y) || (lat, lon) = %.2f, %.2f || %.2f, %.2f", m_x, m_y, m_gps.lat, m_gps.lon);
       }
 
       bool
@@ -185,12 +221,18 @@ namespace MiniASV
           param = std::strtok(NULL, ",");
           m_distance2 = atof(param);
 
+          while (!(m_distance1 + m_distance2 > m_args.dist_anchors && m_args.dist_anchors + m_distance1 > m_distance2 && m_args.dist_anchors + m_distance2 > m_distance1))
+          {
+            m_distance1 += 0.01;
+            m_distance2 += 0.01;
+          }
 
-          // anchors pos: (0,0) and (1,0)
-          m_x = (pow(m_distance1, 2) + pow(1, 2) - pow(m_distance2, 2)) / 2;
+          // inf("d1: %.3f, d2: %.3f", m_distance1, m_distance2);
+
+          // anchors pos: (0,0) and (m_args.dist_anchors,0)
+          m_x = (pow(m_distance1, 2) + pow(m_args.dist_anchors, 2) - pow(m_distance2, 2)) / (2 * m_args.dist_anchors);
+
           m_y = sqrt(pow(m_distance1, 2) - pow(m_x, 2));
-
-          inf("Estimated Vehicle Position: (%.3f, %.3f)", m_x, m_y);
         }
 
         bfr[0] = '\0';

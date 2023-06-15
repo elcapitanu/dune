@@ -24,68 +24,84 @@
 // https://github.com/LSTS/dune/blob/master/LICENCE.md and                  *
 // http://ec.europa.eu/idabc/eupl.html.                                     *
 //***************************************************************************
-// Author: Ricardo Martins                                                  *
+// Author: Filipe                                                           *
 //***************************************************************************
 
-#ifndef SENSORS_LIMU_ERROR_HANDLING_HPP_INCLUDED_
-#define SENSORS_LIMU_ERROR_HANDLING_HPP_INCLUDED_
+// DUNE headers.
+#include <DUNE/DUNE.hpp>
 
-// ISO C++ 98 headers.
-#include <map>
-
-namespace Sensors
+namespace MiniASV
 {
-  namespace LIMU
+  //! Insert short task description here.
+  //!
+  //! Insert explanation on task behaviour here.
+  //! @author Filipe
+  namespace Producer
   {
-    //! IMU error flags.
-    enum ErrorFlags
+    using DUNE_NAMESPACES;
+
+    struct Task : public DUNE::Tasks::Task
     {
-      //! Watchdog timeout.
-      ERR_FLAG_WDOG_TOUT = (1 << 15),
-      //! Processing overrun.
-      ERR_FLAG_PROC_OVR = (1 << 7),
-      //! Sensor overrange.
-      ERR_FLAG_SENS_OVR = (1 << 4),
-      //! SPI communication error.
-      ERR_FLAG_SPI_ERR = (1 << 3)
-    };
+      //! Constructor.
+      //! @param[in] name task name.
+      //! @param[in] ctx context.
+      Task(const std::string &name, Tasks::Context &ctx) : DUNE::Tasks::Task(name, ctx)
+      {
+      }
 
-    //! Error counts.
-    class ErrorCounts
-    {
-    public:
+      //! Update internal state with new parameter values.
       void
-      clear(void)
+      onUpdateParameters(void)
       {
-        std::map<ErrorFlags, unsigned>::iterator itr = m_counts.begin();
-        for (; itr != m_counts.end(); ++itr)
-          itr->second = 0;
+      }
+
+      //! Reserve entity identifiers.
+      void
+      onEntityReservation(void)
+      {
+      }
+
+      //! Resolve entity names.
+      void
+      onEntityResolution(void)
+      {
+      }
+
+      //! Acquire resources.
+      void
+      onResourceAcquisition(void)
+      {
+      }
+
+      //! Initialize resources.
+      void
+      onResourceInitialization(void)
+      {
+      }
+
+      //! Release resources.
+      void
+      onResourceRelease(void)
+      {
       }
 
       void
-      increment(ErrorFlags flag)
+      onMain(void)
       {
-        std::map<ErrorFlags, unsigned>::iterator itr = m_counts.find(flag);
-        if (itr == m_counts.end())
-          m_counts[flag] = 0;
-        else
-          ++m_counts[flag];
-      }
 
-      unsigned
-      getTotal(void)
-      {
-        unsigned total = 0;
-        std::map<ErrorFlags, unsigned>::const_iterator itr = m_counts.begin();
-        for (; itr != m_counts.end(); ++itr)
-          total += itr->second;
-        return total;
-      }
+        IMC::Temperature msg; // use temperature message from IMC
+        msg.value = 1;        // Initialize the temperature value.
 
-    private:
-      std::map<ErrorFlags, unsigned> m_counts;
+        while (!stopping())
+        {
+          // std::cout << msg.value << "\n";
+          msg.value += 1;
+          dispatch(msg);    // Dispatch the value to the message bus
+          Delay::wait(0.2); // Wait doing nothing.
+        }
+      }
     };
   }
 }
 
-#endif
+DUNE_TASK
