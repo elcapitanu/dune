@@ -71,6 +71,8 @@ namespace Control
         //! Task arguments.
         Arguments m_args;
 
+        ObstacleInterface obs;
+
         // From an older version
         // double big_lon = -8.59896405, small_lon = -8.5991518;
         // double big_lat = 41.17539860, small_lat = 41.17507457;
@@ -186,11 +188,6 @@ namespace Control
           inf("After lbl (x, y) = %.2f, %.2f", obs.pos[0][0], obs.pos[0][1]);
         }
 
-        double
-        x_pos_to_latitude(double x)
-        {
-          return (x - 0) * (41.18388408 - 41.18365927) / (25 - 0) + 41.18365927;
-        }
         /************FEP COORDINATESS***************/
         // IE: 41.17513715, -8.5991518
         // SE: 41.17546118, -8.59900295
@@ -225,7 +222,6 @@ namespace Control
           double help = 0.000009071;
           double end_lat = m_args.ini_lat + (m_args.x_size * help);
           return (lat - m_args.ini_lat) * (m_args.x_size - 0) / (end_lat - m_args.ini_lat) + 0;
-          // return (lat - m_args.ini_lat) * (20 - 0) / (end_lat - m_args.ini_lat) + 0;
         }
 
         //! In meters
@@ -235,7 +231,6 @@ namespace Control
           double help = 0.000012249;
           double end_lon = m_args.ini_lon + (m_args.y_size * help);
           return (lon - m_args.ini_lon) * (m_args.y_size - 0) / (end_lon - m_args.ini_lon) + 0;
-          // return (lon - m_args.ini_lon) * (20 - 0) / (end_lon - m_args.ini_lon) + 0;
         }
 
         /**
@@ -301,8 +296,9 @@ namespace Control
 
           int index = obs.closest_object(x_pos, y_pos);
 
-          double obs_x = obs.pos[index][0];
-          double obs_y = obs.pos[index][1];
+          // Add this later/soon
+          // double obs_x = obs.pos[index][0];
+          // double obs_y = obs.pos[index][1];
 
           double in_x = abs(obs_x - x_pos);
           double in_y = abs(obs_y - y_pos);
