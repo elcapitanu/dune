@@ -138,6 +138,7 @@ namespace MiniASV
       consume(const IMC::VehicleState *msg)
       {
         m_asv_state = msg->op_mode;
+        inf("Vehicle State: %d", m_asv_state);
       }
 
       void
@@ -184,98 +185,133 @@ namespace MiniASV
               spew("Received message: %s", received_message.c_str());
 
               // Check if the received message is a task and process it.
-              if (received_message == "Task1\n")
+              if (received_message == "Task1\n") // goto message
               {
-                inf("Executing Task 1");
-                std::string message = "ACK Task1";
-                client_socket->write(message.c_str(), message.size());
+                // FIXME: chagne this to new coordinates
 
-                m_current_task = 1;
-
-                IMC::Goto maneuver;
-                float x = 15, y = 15;
-
-                if ((x > 0) && (x <= 20) && (y > 0) & (y <= 20))
+                std::string message;
+                if (IMC::VehicleState::VS_SERVICE == m_asv_state)
                 {
-                  maneuver.lon = (x - 0) * (-8.7080671 - -8.70836583) / (20 - 0) - 8.70836583;
-                  maneuver.lat = (y - 0) * (41.18388408 - 41.18365927) / (20 - 0) + 41.18365927;
+                  inf("Executing Task 1");
+                  message = "ACK Task1";
+
+                  m_current_task = 1;
+
+                  IMC::Goto maneuver;
+                  float x = 15, y = 3;
+
+                  if ((x > 0) && (x <= 20) && (y > 0) & (y <= 20))
+                  {
+                    maneuver.lon = (x - 0) * (-8.7080671 - -8.70836583) / (20 - 0) - 8.70836583;
+                    maneuver.lat = (y - 0) * (41.18388408 - 41.18365927) / (20 - 0) + 41.18365927;
+                  }
+
+                  //! Create Goto command in database
+                  IMC::PlanGeneration m_gen;
+
+                  m_gen.op = IMC::PlanGeneration::OP_REQUEST;
+                  m_gen.plan_id = "go"; // Goto ID
+                  // m_gen.params = "loc=;lat=" + std::to_string(maneuver.lat) + ";lon=" + std::to_string(maneuver.lon) + ";depth=0";
+                  m_gen.params = "loc=;lat=" + std::to_string(41.17540997) + ";lon=" + std::to_string(-8.59899188) + ";depth=0";
+                  m_gen.cmd = IMC::PlanGeneration::CMD_GENERATE;
+                  dispatch(m_gen);
+
+                  m_gen.cmd = IMC::PlanGeneration::CMD_EXECUTE;
+                  dispatch(m_gen);
+                }
+                else
+                {
+                  inf("Task 1 Not Executed");
+                  message = "ASV Busy";
                 }
 
-                //! Create Goto command in database
-                IMC::PlanGeneration m_gen;
-
-                inf("Goto ID %d", IMC::Goto::getIdStatic());
-                m_gen.op = IMC::PlanGeneration::OP_REQUEST;
-                m_gen.plan_id = "go"; // Goto ID
-                m_gen.params = "loc=;lat=" + std::to_string(maneuver.lat) + ";lon=" + std::to_string(maneuver.lon) + ";depth=0";
-                m_gen.cmd = IMC::PlanGeneration::CMD_GENERATE;
-                dispatch(m_gen);
-
-                m_gen.cmd = IMC::PlanGeneration::CMD_EXECUTE;
-                dispatch(m_gen);
+                client_socket->write(message.c_str(), message.size());
               }
-              else if (received_message == "Task2\n")
+              else if (received_message == "Task2\n") // Stop Maneuver
               {
                 inf("Executing Task 2");
                 std::string message = "ACK Task2";
                 client_socket->write(message.c_str(), message.size());
                 m_current_task = 2;
               }
-              else if (received_message == "Task3\n")
+              else if (received_message == "Task3\n") // Do .ini plan
               {
-                inf("Executing Task 3");
-                std::string message = "ACK Task3";
 
-                // FIXME: not tested with App
+                std::string message;
+                if (IMC::VehicleState::VS_SERVICE == m_asv_state)
+                {
 
-                IMC::PlanControl p_control; //= new IMC::PlanControl();
-                // IMC::PlanSpecification *ps = new IMC::PlanSpecification();
+                  inf("Executing Task 3");
+                  message = "ACK Task3";
+                  m_current_task = 3;
 
-                p_control.type = IMC::PlanControl::PC_REQUEST;
-                p_control.op = IMC::PlanControl::PC_START;
-                // p_control.request_id = 151;
-                p_control.flags = IMC::PlanControl::FLG_IGNORE_ERRORS;
-                p_control.setDestination(getSystemId());
-                // p_control->setDestinationEntity(getEntityId());
-                p_control.plan_id = m_args.plan;
-                // p_control->arg.set(*ps);
-                // p_control->info = "Will this finally work?"; // Useless ahah
-                dispatch(p_control);
+                  // FIXME: not tested with App
+
+                  IMC::PlanControl p_control; //= new IMC::PlanControl();
+                  // IMC::PlanSpecification *ps = new IMC::PlanSpecification();
+
+                  p_control.type = IMC::PlanControl::PC_REQUEST;
+                  p_control.op = IMC::PlanControl::PC_START;
+                  p_control.flags = IMC::PlanControl::FLG_IGNORE_ERRORS;
+                  p_control.setDestination(getSystemId());
+                  // p_control->setDestinationEntity(getEntityId());
+                  p_control.plan_id = m_args.plan;
+                  // p_control->arg.set(*ps);
+                  // p_control->info = "Will this finally work?"; // Useless ahah
+                  dispatch(p_control);
+                }
+                else
+                {
+                  inf("Task 3 Not Executed");
+                  message = "ASV Busy";
+                }
 
                 client_socket->write(message.c_str(), message.size());
-                m_current_task = 3;
               }
               else if (received_message == "Task4\n")
               {
                 inf("Executing Task 4");
                 std::string message = "ACK Task4";
                 client_socket->write(message.c_str(), message.size());
-                m_current_task = 4;
+                // m_current_task = 4;
               }
               else if (received_message == "Task5\n")
               {
                 inf("Executing Task 5");
                 std::string message = "ACK Task5";
                 client_socket->write(message.c_str(), message.size());
-                m_current_task = 5;
+                // m_current_task = 5;
               }
               else if (received_message == "SendData\n")
               {
-                count++;
-                if (count % 4 == 0)
-                {
-                  m_asv_state++;
-                }
-                // inf("Executing SendData");
-                m_temp_cpu += 1;
-                m_temp_batt += 1;
-                m_lat += 0.00005;
-                m_lon += 0.00005;
-                m_batt_percentage += 1;
-                m_yaw += 0.33;
+                // count++;
+                // if (count % 4 == 0)
+                // {
+                //   m_asv_state++;
+                // }
+                // TODO: test this with Filipe and verify these values
+                inf("Executing SendData");
+                m_temp_cpu = 81;
+                m_temp_batt = 40;
+                // m_lat += 0.00005;
+                // m_lon += 0.00005;
+                m_batt_percentage = 77;
+                // m_yaw += 0.33;
 
                 std::string message = "cpu_temp=" + std::to_string(m_temp_cpu) + ",bat_temp=" + std::to_string(m_temp_batt) + ",lat=" + std::to_string(m_lat) + ",long=" + std::to_string(m_lon) + ",bat_perc=" + std::to_string(m_batt_percentage) + ",dir=" + std::to_string(m_yaw) + ",cur_task=" + std::to_string(m_current_task) + ",state=" + std::to_string(m_asv_state);
                 client_socket->write(message.c_str(), message.size());
+              }
+              else if (received_message == "Stop\n") // Stop Maneuver
+              {
+                inf("Stopping");
+                std::string message = "Stopped";
+
+                IMC::VehicleCommand cmd;
+                cmd.command = IMC::VehicleCommand::VC_STOP_MANEUVER;
+                dispatch(cmd);
+
+                client_socket->write(message.c_str(), message.size());
+                m_current_task = 0;
               }
               else if (received_message == "Ping\n")
               {
