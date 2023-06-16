@@ -37,7 +37,7 @@
 // ISO C++ 98 headers.
 #include <iomanip>
 #include <cmath>
-
+#include "Obstacles.hpp"
 // DUNE headers.
 #include <DUNE/DUNE.hpp>
 
@@ -60,6 +60,7 @@ namespace Control
         float in_radius, out_radius;
         double x_size, y_size, theta_rot;
         double ini_lat, ini_lon;
+        bool obstacle_avoidance;
       };
 
       struct Task : public DUNE::Control::PathController
@@ -70,6 +71,8 @@ namespace Control
         IMC::DesiredHeading m_heading;
         //! Task arguments.
         Arguments m_args;
+
+        ObstacleInterface obs;
 
         // From an older version
         // double big_lon = -8.59896405, small_lon = -8.5991518;
@@ -109,6 +112,10 @@ namespace Control
               .defaultValue("1.0")
               .description("Turn rate gain for extended control");
 
+          param("Obstacle Avoidance -- Enabled", m_args.obstacle_avoidance)
+              .defaultValue("false")
+              .description("Is obstacle avoidance enabled?");
+
           param("Obstacle Avoidance -- x", m_args.obs_x)
               .defaultValue("40")
               .description("Position of obstacle in coordinate x from 0 to 20");
@@ -146,6 +153,8 @@ namespace Control
               .description("Origin longitude referential");
           // .units(Units::DegreePerSecond)
 
+          bind<IMC::LblEstimate>(this);
+
           // val I want to compare lat:
           // 41.17546157
           // val I want to compare lon:
@@ -174,6 +183,19 @@ namespace Control
         {
           // Activate heading cotroller.
           enableControlLoops(IMC::CL_YAW);
+        }
+
+        void
+        consume(const IMC::LblEstimate *est)
+        {
+          inf("Received lbl");
+          obs.add_obstacle(est->x / 20 * m_args.x_size, est->y / 20 * m_args.y_size);             // obs_1
+          obs.add_obstacle(14.32 / 20 * m_args.x_size, 14.30 / 20 * m_args.y_size);               // obs_5
+          obs.add_obstacle(16.6 / 20 * m_args.x_size, 9.17 / 20 * m_args.y_size);                 // obs_3
+          obs.add_obstacle(14.8 / 20 * m_args.x_size, 21.8 / 20 * m_args.y_size);                 // obs_4
+          obs.add_obstacle(m_args.obs_x / 20 * m_args.x_size, m_args.obs_y / 20 * m_args.y_size); // obs_2
+
+          inf("After lbl (x, y) = %.2f, %.2f", obs.pos[0][0], obs.pos[0][1]);
         }
 
         /************FEP COORDINATESS***************/
@@ -208,9 +230,9 @@ namespace Control
         {
           // double help = (double)0.001 / (double)111;
           double help = 0.000009071;
-          double end_lat = m_args.ini_lat + (m_args.x_size * help);
+          // double end_lat = m_args.ini_lat + (m_args.x_size * help);
+          double end_lat = 41.17546018;
           return (lat - m_args.ini_lat) * (m_args.x_size - 0) / (end_lat - m_args.ini_lat) + 0;
-          // return (lat - m_args.ini_lat) * (20 - 0) / (end_lat - m_args.ini_lat) + 0;
         }
 
         //! In meters
@@ -218,10 +240,25 @@ namespace Control
         longitude_to_y_pos(double lon)
         {
           double help = 0.000012249;
-          double end_lon = m_args.ini_lon + (m_args.y_size * help);
+          // double end_lon = m_args.ini_lon + (m_args.y_size * help);
+          double end_lon = -8.59895583;
           return (lon - m_args.ini_lon) * (m_args.y_size - 0) / (end_lon - m_args.ini_lon) + 0;
-          // return (lon - m_args.ini_lon) * (20 - 0) / (end_lon - m_args.ini_lon) + 0;
         }
+
+        /**
+         * Collums y:
+         * 1 -> 2.49
+         * 2 -> 7.46
+         * 3 -> 12.40
+         * 4 ->
+         *
+         */
+
+        /**
+         * Rows above:
+         * 1 -> 23.28
+         * 2 -> 3.08
+         */
 
         //! Execute a path control step
         //! From base class PathController
@@ -240,11 +277,6 @@ namespace Control
           double ref = 0; // Radians of vector
 
           // for testing
-          double obs_x = m_args.obs_x / 20 * m_args.x_size;
-          double obs_y = m_args.obs_y / 20 * m_args.y_size;
-
-          // double obs_x = m_args.obs_x;
-          // double obs_y = m_args.obs_y;
 
           double in_radius = m_args.in_radius, out_radius = m_args.out_radius;
           double x_pos, y_pos;
@@ -257,17 +289,24 @@ namespace Control
           // begin of Calculation_test
           double hypotenuse = sqrt(pow((m_args.ini_lat - x_pos), 2) + pow((m_args.ini_lon - y_pos), 2));
           double referencial_angle = std::acos((x_pos - m_args.ini_lat) / hypotenuse);
+          // double referencial_angle = std::asin((y_pos - m_args.ini_lon) / hypotenuse);
           double cateto_adj = m_args.ini_lat + (hypotenuse * std::cos(referencial_angle - Angles::radians(m_args.theta_rot)));
           double cateto_opt = m_args.ini_lon + (hypotenuse * std::sin(referencial_angle - Angles::radians(m_args.theta_rot)));
 
-          // double x_pos_2 = (cateto_adj - ini_lat) * (25 - 0) / (end_lat - ini_lat) + 0;
-          // double y_pos_2 = (cateto_opt - ini_lon) * (25 - 0) / (end_lon - ini_lon) + 0; // degrees to pool
-
           // end of Calculation test
-          // TODO: add changing capabilities of distance to .ini!
 
           x_pos = latitude_to_x_pos(cateto_adj);  // degrees to pool
           y_pos = longitude_to_y_pos(cateto_opt); // degrees to pool
+
+          int index = obs.closest_object(x_pos, y_pos);
+
+          // double obs_x = m_args.obs_x / 20 * m_args.x_size;
+          // double obs_y = m_args.obs_y / 20 * m_args.y_size;
+
+          double obs_x = obs.pos[index][0];
+          double obs_y = obs.pos[index][1];
+
+          // Add this later/soon
 
           double in_x = abs(obs_x - x_pos);
           double in_y = abs(obs_y - y_pos);
@@ -277,19 +316,23 @@ namespace Control
 
           inf("Pos(X, Y, angle): %.2f, %.2f, %.2f -> ABS: %.2f ", x_pos, y_pos, Angles::degrees(referencial_angle) - 20, in_abs);
 
-          double x_final = x_pos + ts.range * cos(ts.los_angle);
-          double y_final = y_pos + ts.range * sin(ts.los_angle);
+          double x_final = x_pos + ts.range * cos(ts.los_angle - Angles::radians(m_args.theta_rot));
+          double y_final = y_pos + ts.range * sin(ts.los_angle - Angles::radians(m_args.theta_rot));
 
           double theta = std::atan2(y_final - obs_y, x_final - obs_x); // Angle between obstacle and final position
 
           // angle used to know if is past buoy
           double leaving_angle = in_angle - theta;
 
+          inf("FINAL(X, Y, in_angle, theta, leaving): %.2f, %.2f, %.2f, %.2f, %.2f", x_final, y_final, Angles::degrees(in_angle), Angles::degrees(theta), Angles::degrees(leaving_angle));
           double aux_x, aux_y;
-          double centerX, centerY;
 
           aux_x = x_pos - obs_x;
           aux_y = y_pos - obs_y;
+
+          // for (int i = 0; i < obs.MAX_MACRO[0]; i++)
+          // {
+          // }
 
           // Doesn't have space to go because of the wall
           // if ((obs_y - out_radius) <= 1 || (out_radius + obs_y) >= 24)
@@ -330,10 +373,8 @@ namespace Control
             ref += ts.track_bearing;
           }
 
-          double old_ref = ref;
-
-          // Inside out radius, change bearing to tan of radius
-          if (leaving_angle <= DUNE::Math::Angles::radians(-90) || leaving_angle >= DUNE::Math::Angles::radians(90)) // entrou aqui quando devia
+          //  Inside out radius, change bearing to tan of radius
+          if ((leaving_angle <= DUNE::Math::Angles::radians(-90) || leaving_angle >= DUNE::Math::Angles::radians(90)) && m_args.obstacle_avoidance) // entrou aqui quando devia
           {
             if (in_abs < out_radius)
             {
@@ -365,21 +406,20 @@ namespace Control
               else
               {
                 inf("Inside Radius overwrite: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
+                // Inside inner circle, go all the way backwards
               }
             }
-
-            // Inside inner circle, go all the way backwards
           }
 
           // Stay away from the pool wall
           // TODO: verify all walls
-          // if (x_pos <= 1 || x_pos >= 24 || y_pos <= 1 || y_pos >= 24)
+          // if (x_pos <= (0.4 / 20 * m_args.x_size) || x_pos >= (19.6 / 20 * m_args.x_size) || y_pos <= (0.4 / 20 * m_args.y_size) || y_pos >= (19.6 / 20 * m_args.y_size))
           // {
-          //   aux_x = 12.5 - x_pos;
-          //   aux_y = 12.5 - y_pos;
+          //   aux_x = m_args.x_size / 2 - x_pos;
+          //   aux_y = m_args.y_size / 2 - y_pos;
 
           //   ref = std::atan2(aux_y, aux_x); // Always points to the center of the pool
-          //   spew("Bro too close to the WALL");
+          //   inf("Bro too close to the WALL");
           // }
 
           inf("Loop ref: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
