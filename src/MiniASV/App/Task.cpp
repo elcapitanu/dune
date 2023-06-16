@@ -230,10 +230,20 @@ namespace MiniASV
               }
               else if (received_message == "Task2\n") // Stop Maneuver
               {
-                inf("Executing Task 2");
-                std::string message = "ACK Task2";
+                std::string message;
+                if (IMC::VehicleState::VS_SERVICE == m_asv_state)
+                {
+                  inf("Executing Task 2");
+                  message = "ACK Task2";
+                  m_current_task = 0;
+                }
+                else
+                {
+                  inf("Task 2 Not Executed");
+                  message = "ASV Busy";
+                }
+
                 client_socket->write(message.c_str(), message.size());
-                m_current_task = 2;
               }
               else if (received_message == "Task3\n") // Do .ini plan
               {
@@ -271,17 +281,37 @@ namespace MiniASV
               }
               else if (received_message == "Task4\n")
               {
-                inf("Executing Task 4");
-                std::string message = "ACK Task4";
+                std::string message;
+                if (IMC::VehicleState::VS_SERVICE == m_asv_state)
+                {
+                  inf("Executing Task 4");
+                  message = "ACK Task4";
+                  m_current_task = 0;
+                }
+                else
+                {
+                  inf("Task 4 Not Executed");
+                  message = "ASV Busy";
+                }
+
                 client_socket->write(message.c_str(), message.size());
-                // m_current_task = 4;
               }
               else if (received_message == "Task5\n")
               {
-                inf("Executing Task 5");
-                std::string message = "ACK Task5";
+                std::string message;
+                if (IMC::VehicleState::VS_SERVICE == m_asv_state)
+                {
+                  inf("Executing Task 5");
+                  message = "ACK Task5";
+                  m_current_task = 0;
+                }
+                else
+                {
+                  inf("Task 5 Not Executed");
+                  message = "ASV Busy";
+                }
+
                 client_socket->write(message.c_str(), message.size());
-                // m_current_task = 5;
               }
               else if (received_message == "SendData\n")
               {
