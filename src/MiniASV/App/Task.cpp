@@ -64,14 +64,14 @@ namespace MiniASV
                                                            m_socket(NULL)
       {
 
+        bind<IMC::GpsFix>(this);
+        bind<IMC::EulerAngles>(this);
+        bind<IMC::VehicleState>(this);
+        bind<IMC::Temperature>(this);
+
         param("Main Execution Plan", m_args.plan)
             .defaultValue("plano_teste_1")
             .description("Serial port device used to communicate with the sensor");
-
-        bind<IMC::GpsFix>(this);
-        bind<IMC::Temperature>(this);
-        bind<IMC::EulerAngles>(this);
-        bind<IMC::VehicleState>(this);
       }
 
       ~Task(void)
@@ -119,12 +119,14 @@ namespace MiniASV
         // No change needed here.
         m_lat = Angles::degrees(msg->lat);
         m_lon = Angles::degrees(msg->lon);
+        spew("lat and lon read!");
       }
 
       void
       consume(const IMC::EulerAngles *msg)
       {
-        m_yaw = msg->psi;
+        m_yaw = Angles::degrees(msg->psi);
+        spew("Angles consume!");
       }
 
       void
@@ -138,7 +140,7 @@ namespace MiniASV
       consume(const IMC::VehicleState *msg)
       {
         m_asv_state = msg->op_mode;
-        inf("Vehicle State: %d", m_asv_state);
+        spew("Vehicle State: %d", m_asv_state);
       }
 
       void
@@ -172,17 +174,16 @@ namespace MiniASV
         // Communicate with the client.
         try
         {
-
           while (!stopping())
           {
             // Now we can read from and write to the client socket.
+            waitForMessages(0.1);
             int rv = client_socket->read(m_buffer, sizeof(m_buffer));
-
             if (rv > 0)
             {
               // Process the received message.
               std::string received_message((char *)m_buffer, rv);
-              spew("Received message: %s", received_message.c_str());
+              inf("Received message: %s", received_message.c_str());
 
               // Check if the received message is a task and process it.
               if (received_message == "Task1\n") // goto message
