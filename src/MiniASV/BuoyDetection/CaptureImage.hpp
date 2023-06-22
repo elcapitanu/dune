@@ -68,6 +68,7 @@ namespace MiniASV
         m_capture = initCapture(m_url);
         m_wdog_cap_erro.setTop(1.0);
         m_counter_erro_frame = 0;
+        m_new_frame = false;
       }
 
       //! Destructor.
@@ -106,6 +107,18 @@ namespace MiniASV
         }
       }
 
+      bool
+      newFrame(void)
+      {
+        return m_new_frame;
+      }
+
+      void
+      clearNewFrameFlag(void)
+      {
+        m_new_frame = false;
+      }
+
       void
       run(void)
       {
@@ -117,24 +130,24 @@ namespace MiniASV
         else
         {
           m_is_capturing = true;
-          if (m_imshow.compare("All") == 0)
-            cv::namedWindow("RawVideo", cv::WINDOW_NORMAL);
+          // if (m_imshow.compare("All") == 0)
+          //   cv::namedWindow("RawVideo", cv::WINDOW_NORMAL);
 
-          try
-          {
-            address = new Address(m_ip_app.c_str());
-            m_socket = new UDPSocket;
+          // try
+          // {
+          //   address = new Address(m_ip_app.c_str());
+          //   m_socket = new UDPSocket;
 
-            // int flags = fcntl(*m_socket, F_GETFL, 0);
-            // flags |= O_NONBLOCK;
-            // fcntl(*m_socket, F_SETFL, flags);
+          //   // int flags = fcntl(*m_socket, F_GETFL, 0);
+          //   // flags |= O_NONBLOCK;
+          //   // fcntl(*m_socket, F_SETFL, flags);
 
-            m_task->spew(DTR("Server started..."));
-          }
-          catch (std::runtime_error &e)
-          {
-            throw RestartNeeded(e.what(), 5);
-          }
+          //   m_task->spew(DTR("Server started..."));
+          // }
+          // catch (std::runtime_error &e)
+          // {
+          //   throw RestartNeeded(e.what(), 5);
+          // }
 
           cv::Mat frame_temp;
           while (!isStopping())
@@ -165,35 +178,35 @@ namespace MiniASV
             {
               m_counter_erro_frame = 0;
               m_frame = frame_temp.clone();
+              m_new_frame = true;
               if (m_imshow.compare("All") == 0 || m_imshow.compare("Input") == 0)
               {
                 cv::imshow("RTSP stream thread", frame_temp);
                 cv::waitKey(1);
 
-                // Encode the frame as JPEG
-                std::vector<uchar> encodedFrame;
-                cv::imencode(".jpg", frame_temp, encodedFrame, {cv::IMWRITE_JPEG_QUALITY, 20});
+                // // Encode the frame as JPEG
+                // std::vector<uchar> encodedFrame;
+                // cv::imencode(".jpg", frame_temp, encodedFrame, {cv::IMWRITE_JPEG_QUALITY, 20});
 
-                // Serialize frame
-                std::vector<uint8_t> data(encodedFrame.begin(), encodedFrame.end());
+                // // Serialize frame
+                // std::vector<uint8_t> data(encodedFrame.begin(), encodedFrame.end());
 
-                const uint8_t* buf = data.data();
-                int size = data.size();
+                // const uint8_t* buf = data.data();
+                // int size = data.size();
 
-                int chunkSize = 65000;
-                int remainingSize = size;
+                // int chunkSize = 65000;
+                // int remainingSize = size;
 
-                int step = 0;
-                m_task->war("Vou mandar uma iamgem: %d", size);
+                // int step = 0;
+                // m_task->war("Vou mandar uma iamgem: %d", size);
 
-                for (int i = 0; i < size; i += chunkSize)
-                {
-                  m_task->war("Step: %d", step++);
-                  int currentSize = std::min(chunkSize, remainingSize);
-                  m_socket->write(buf + i, currentSize, *address, 8888);
-                  remainingSize -= currentSize;
-                }
-
+                // for (int i = 0; i < size; i += chunkSize)
+                // {
+                //   m_task->war("Step: %d", step++);
+                //   int currentSize = std::min(chunkSize, remainingSize);
+                //   m_socket->write(buf + i, currentSize, *address, 8888);
+                //   remainingSize -= currentSize;
+                // }
               }
             }
           }
@@ -229,6 +242,7 @@ namespace MiniASV
       Counter<double> m_wdog_cap_erro;
       //! Counter of frames fail
       int m_counter_erro_frame;
+      bool m_new_frame;
     };
   }
 }
