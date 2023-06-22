@@ -52,7 +52,7 @@ namespace Control
 
                         double in_abs = sqrt(pow(in_x, 2) + pow(in_y, 2));
 
-                        printf("Pos(X, Y): %.2f, %.2f -> ABS[%d]: %.2f\n", my_x, my_y, i, in_abs);
+                        // printf("Pos(X, Y): %.2f, %.2f -> ABS[%d]: %.2f\n", my_x, my_y, i, in_abs);
 
                         if (in_abs < abs_min)
                         {

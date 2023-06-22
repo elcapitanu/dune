@@ -183,7 +183,7 @@ namespace MiniASV
             {
               // Process the received message.
               std::string received_message((char *)m_buffer, rv);
-              inf("Received message: %s", received_message.c_str());
+              // inf("Received message: %s", received_message.c_str());
 
               // Check if the received message is a task and process it.
               if (received_message == "Task1\n") // goto message
@@ -321,7 +321,7 @@ namespace MiniASV
                 //   m_asv_state++;
                 // }
                 // TODO: test this with Filipe and verify these values
-                inf("Executing SendData");
+                // inf("Executing SendData");
                 m_temp_cpu = 81;
                 m_temp_batt = 40;
                 // m_lat += 0.00005;

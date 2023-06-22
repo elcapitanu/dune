@@ -314,7 +314,7 @@ namespace Control
 
           double in_abs = sqrt(pow(in_x, 2) + pow(in_y, 2));
 
-          inf("Pos(X, Y, angle): %.2f, %.2f, %.2f -> ABS: %.2f ", x_pos, y_pos, Angles::degrees(referencial_angle) - 20, in_abs);
+          spew("Pos(X, Y, angle): %.2f, %.2f, %.2f -> ABS: %.2f ", x_pos, y_pos, Angles::degrees(referencial_angle) - 20, in_abs);
 
           double x_final = x_pos + ts.range * cos(ts.los_angle - Angles::radians(m_args.theta_rot));
           double y_final = y_pos + ts.range * sin(ts.los_angle - Angles::radians(m_args.theta_rot));
@@ -324,7 +324,7 @@ namespace Control
           // angle used to know if is past buoy
           double leaving_angle = in_angle - theta;
 
-          inf("FINAL(X, Y, in_angle, theta, leaving): %.2f, %.2f, %.2f, %.2f, %.2f", x_final, y_final, Angles::degrees(in_angle), Angles::degrees(theta), Angles::degrees(leaving_angle));
+          spew("FINAL(X, Y, in_angle, theta, leaving): %.2f, %.2f, %.2f, %.2f, %.2f", x_final, y_final, Angles::degrees(in_angle), Angles::degrees(theta), Angles::degrees(leaving_angle));
           double aux_x, aux_y;
 
           aux_x = x_pos - obs_x;
@@ -382,7 +382,7 @@ namespace Control
 
               if (in_abs >= in_radius)
               {
-                inf("out radius initial: %.2f", Angles::degrees(Angles::normalizeRadian(ref)));
+                spew("out radius initial: %.2f", Angles::degrees(Angles::normalizeRadian(ref)));
                 // if (laranja)
                 // {
                 //   ref -= DUNE::Math::Angles::radians(90) - DUNE::Math::Angles::radians(10);
@@ -401,11 +401,11 @@ namespace Control
                 {
                   ref += DUNE::Math::Angles::radians(90) + DUNE::Math::Angles::radians(20); // Extra value to make ti a little more agressive
                 }
-                inf("out radius final: %.2f", Angles::degrees(Angles::normalizeRadian(ref)));
+                spew("out radius final: %.2f", Angles::degrees(Angles::normalizeRadian(ref)));
               }
               else
               {
-                inf("Inside Radius overwrite: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
+                spew("Inside Radius overwrite: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
                 // Inside inner circle, go all the way backwards
               }
             }
@@ -422,7 +422,7 @@ namespace Control
           //   inf("Bro too close to the WALL");
           // }
 
-          inf("Loop ref: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
+          spew("Loop ref: %.3f", Angles::degrees(Angles::normalizeRadian(ref)));
 
           if (ts.cc)
             ref += state.psi - ts.course; // course control rather than yaw control
