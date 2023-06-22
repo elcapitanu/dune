@@ -61,11 +61,15 @@ namespace MiniASV
       //! Flag to control reset of board
       bool m_is_first_reset;
 
+      double yaw;
+      bool state_updated = false;
+
       //! Constructor.
       //! @param[in] name task name.
       //! @param[in] ctx context.
       Task(const std::string &name, Tasks::Context &ctx) : DUNE::Tasks::Task(name, ctx)
       {
+        bind<IMC::EstimatedState>(this);
       }
 
       //! Update internal state with new parameter values.
@@ -112,6 +116,13 @@ namespace MiniASV
       }
 
       void
+      consume(const IMC::EstimatedState *state)
+      {
+        yaw = state->psi;
+        state_updated = true;
+      }
+
+      void
       dispatchDataMotor()
       {
         m_tstamp = Clock::getSinceEpoch();
@@ -126,12 +137,20 @@ namespace MiniASV
       //! Main loop.
       void onMain(void)
       {
+
+        bool measuring = false;
+        float desired_angle = Angles::radians(90);
+
         while (!stopping())
         {
-          waitForMessages(1.0);
+          waitForMessages(0.1);
 
           std::string input;
-          std::cin >> input;
+          if (!measuring)
+          {
+            std::cin >> input;
+          }
+
           switch (input[0])
           {
           //! For motor commands
@@ -164,17 +183,17 @@ namespace MiniASV
             // maneuver.lat = DUNE::Math::Angles::radians(maneuver.lat);
 
             //! Create Goto command in database
-            IMC::PlanGeneration m_gen;
+            // IMC::PlanGeneration m_gen;
 
-            inf("Goto ID %d", IMC::Goto::getIdStatic());
-            m_gen.op = IMC::PlanGeneration::OP_REQUEST;
-            m_gen.plan_id = "go"; // Goto ID
-            m_gen.params = "loc=;lat=" + std::to_string(maneuver.lat) + ";lon=" + std::to_string(maneuver.lon) + ";depth=0";
-            m_gen.cmd = IMC::PlanGeneration::CMD_GENERATE;
-            dispatch(m_gen);
+            // inf("Goto ID %d", IMC::Goto::getIdStatic());
+            // m_gen.op = IMC::PlanGeneration::OP_REQUEST;
+            // m_gen.plan_id = "go"; // Goto ID
+            // m_gen.params = "loc=;lat=" + std::to_string(maneuver.lat) + ";lon=" + std::to_string(maneuver.lon) + ";depth=0";
+            // m_gen.cmd = IMC::PlanGeneration::CMD_GENERATE;
+            // dispatch(m_gen);
 
-            m_gen.cmd = IMC::PlanGeneration::CMD_EXECUTE;
-            dispatch(m_gen);
+            // m_gen.cmd = IMC::PlanGeneration::CMD_EXECUTE;
+            // dispatch(m_gen);
 
             // IMC::PlanControl *p_control = new IMC::PlanControl();
             // IMC::PlanSpecification *ps = new IMC::PlanSpecification();
@@ -190,7 +209,45 @@ namespace MiniASV
             // // p_control->info = "Will this finally work?"; // Useless ahah
             // dispatch(*p_control);
 
+            /****************************
+             ****** Buoy Measuring ******
+             *****************************/
+
+            IMC::FuelLevel m_gen;
+
+            m_gen.value = Angles::normalizeRadian(desired_angle - yaw);
+            measuring = true;
+            // if(readings change this value to 360
+
+            dispatch(m_gen);
+
             break;
+          }
+
+          if (measuring && state_updated)
+          {
+
+            // TODO: probably make this a threshold instead of fixed thing
+            IMC::FuelLevel m_gen;
+
+            double rotate_angle = Angles::normalizeRadian(desired_angle - yaw);
+            double threshold_angle = Angles::radians(3);
+            inf("Yaw is %.3f , Angle is %f", Angles::degrees(yaw), Angles::degrees(rotate_angle));
+
+            if (abs(rotate_angle) <= threshold_angle)
+            {
+              inf("Did last thing!");
+              measuring = false;
+              m_gen.value = 360;
+            }
+            else
+            {
+              m_gen.value = rotate_angle;
+            }
+
+            // if(readings change this value to 360
+            state_updated = false;
+            dispatch(m_gen);
           }
         }
       }
