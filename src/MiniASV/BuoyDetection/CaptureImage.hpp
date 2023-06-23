@@ -75,8 +75,8 @@ namespace MiniASV
       ~CaptureImage(void)
       {
         m_capture.release();
-        if (m_imshow.compare("All") == 0 || m_imshow.compare("Cap") == 0)
-          cv::destroyAllWindows();
+        // if (m_imshow.compare("All") == 0 || m_imshow.compare("Cap") == 0)
+        //   cv::destroyAllWindows();
       }
 
       cv::VideoCapture
@@ -181,8 +181,8 @@ namespace MiniASV
               m_new_frame = true;
               if (m_imshow.compare("All") == 0 || m_imshow.compare("Input") == 0)
               {
-                cv::imshow("RTSP stream thread", frame_temp);
-                cv::waitKey(1);
+                // cv::imshow("RTSP stream thread", frame_temp);
+                // cv::waitKey(1);
 
                 // // Encode the frame as JPEG
                 // std::vector<uchar> encodedFrame;
