@@ -356,9 +356,6 @@ namespace Control
           aux_x = x_pos - obs_x;
           aux_y = y_pos - obs_y;
 
-          // for (int i = 0; i < obs.MAX_MACRO[0]; i++)
-          // {
-          // }
 
           // Doesn't have space to go because of the wall
           // if ((obs_y - out_radius) <= 1 || (out_radius + obs_y) >= 24)
