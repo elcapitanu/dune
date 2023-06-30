@@ -200,128 +200,134 @@ namespace MiniASV
       onMain(void)
       {
 
-        // Create Kalman filter
-        cv::KalmanFilter kf(4, 2, 0);
-        cv::Mat state(4, 1, CV_32F); // [x, y, Vx, Vy]
-        cv::Mat measurement = cv::Mat::zeros(2, 1, CV_32F);
-        cv::Mat prediction;
+        // // Create Kalman filter
+        // cv::KalmanFilter kf(4, 2, 0);
+        // cv::Mat state(4, 1, CV_32F); // [x, y, Vx, Vy]
+        // cv::Mat measurement = cv::Mat::zeros(2, 1, CV_32F);
+        // cv::Mat prediction;
 
-        // Initialize Kalman filter
-        kf.transitionMatrix = (cv::Mat_<float>(4, 4) << 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1);
-        cv::setIdentity(kf.measurementMatrix);
-        cv::setIdentity(kf.processNoiseCov, cv::Scalar::all(1e-4));
-        cv::setIdentity(kf.measurementNoiseCov, cv::Scalar::all(1e-1));
-        cv::setIdentity(kf.errorCovPost, cv::Scalar::all(1));
+        // // Initialize Kalman filter
+        // kf.transitionMatrix = (cv::Mat_<float>(4, 4) << 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1);
+        // cv::setIdentity(kf.measurementMatrix);
+        // cv::setIdentity(kf.processNoiseCov, cv::Scalar::all(1e-4));
+        // cv::setIdentity(kf.measurementNoiseCov, cv::Scalar::all(1e-1));
+        // cv::setIdentity(kf.errorCovPost, cv::Scalar::all(1));
 
-        // Define HSV color range, maybe tenho que melhorar para diminuir ruido
-        cv::Scalar lowerHSV(0, 100, 0);
-        cv::Scalar upperHSV(10, 255, 255);
+        // // Define HSV color range, maybe tenho que melhorar para diminuir ruido
+        // cv::Scalar lowerHSV(0, 100, 0);
+        // cv::Scalar upperHSV(10, 255, 255);
 
-        cv::Mat m_frame;
+        // cv::Mat m_frame;
 
         while (!stopping())
         {
           waitForMessages(0.001);
 
-          if (m_cap->isCapturing())
-          {
-            m_frame = m_cap->getFrame();
-            if (!m_frame.empty())
-            {           
-              cv::Mat frameHSV, mask;
-              cv::cvtColor(m_frame, frameHSV, cv::COLOR_BGR2HSV);
-              cv::inRange(frameHSV, lowerHSV, upperHSV, mask);
+          //   if (m_cap->isCapturing())
+          //   {
+          //     if(m_cap->newFrame())
+          //     {
+          //       m_cap->clearNewFrameFlag();
+          //       m_frame = m_cap->getFrame();
+          //       if (!m_frame.empty())
+          //       {
+          //         cv::Mat frameHSV, mask;
+          //         cv::cvtColor(m_frame, frameHSV, cv::COLOR_BGR2HSV_FULL);
+          //         cv::inRange(frameHSV, lowerHSV, upperHSV, mask);
 
-              // Perform object detection using contour analysis or any other method
-              std::vector<std::vector<cv::Point>> contours;
-              cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+          //         // Perform object detection using contour analysis or any other method
+          //         std::vector<std::vector<cv::Point>> contours;
+          //         cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
-              // Find the contour with the largest area
-              double maxArea = 0;
-              int maxAreaIdx = -1;
-              for (int i = 0; i < contours.size(); i++)
-              {
-                double area = cv::contourArea(contours[i]);
-                if (area > maxArea)
-                {
-                  maxArea = area;
-                  maxAreaIdx = i;
-                }
-              }
+          //         // Find the contour with the largest area
+          //         double maxArea = 0;
+          //         int maxAreaIdx = -1;
+          //         for (int i = 0; i < contours.size(); i++)
+          //         {
+          //           double area = cv::contourArea(contours[i]);
+          //           if (area > maxArea)
+          //           {
+          //             maxArea = area;
+          //             maxAreaIdx = i;
+          //           }
+          //         }
 
-              if (maxAreaIdx != -1)
-              {
-                // Calculate the centroid of the largest contour
-                cv::Moments mu = cv::moments(contours[maxAreaIdx]);
-                cv::Point centroid(mu.m10 / mu.m00, mu.m01 / mu.m00);
+          //         if (maxAreaIdx != -1)
+          //         {
+          //           // Calculate the centroid of the largest contour
+          //           cv::Moments mu = cv::moments(contours[maxAreaIdx]);
+          //           cv::Point centroid(mu.m10 / mu.m00, mu.m01 / mu.m00);
 
-                // Update the measurement matrix with the centroid coordinates
-                measurement.at<float>(0) = centroid.x;
-                measurement.at<float>(1) = centroid.y;
+          //           // Update the measurement matrix with the centroid coordinates
+          //           measurement.at<float>(0) = centroid.x;
+          //           measurement.at<float>(1) = centroid.y;
 
-                // Kalman filter prediction step
-                prediction = kf.predict();
+          //           // Kalman filter prediction step
+          //           prediction = kf.predict();
 
-                // Kalman filter update step
-                cv::Mat estimated = kf.correct(measurement);
+          //           // Kalman filter update step
+          //           cv::Mat estimated = kf.correct(measurement);
 
-                // Draw the predicted state (red) and estimated state (green)
-                cv::Point predicted(prediction.at<float>(0), prediction.at<float>(1));
-                cv::Point estimatedPos(estimated.at<float>(0), estimated.at<float>(1));
-                cv::circle(m_frame, predicted, 5, cv::Scalar(0, 0, 255), -1);
-                cv::circle(m_frame, estimatedPos, 5, cv::Scalar(0, 255, 0), -1);
+          //           // Draw the predicted state (red) and estimated state (green)
+          //           cv::Point predicted(prediction.at<float>(0), prediction.at<float>(1));
+          //           cv::Point estimatedPos(estimated.at<float>(0), estimated.at<float>(1));
+          //           cv::circle(m_frame, predicted, 5, cv::Scalar(0, 0, 255), -1);
+          //           cv::circle(m_frame, estimatedPos, 5, cv::Scalar(0, 255, 0), -1);
 
-                // Find the leftmost and rightmost points on the contour
-                cv::Point leftmost = contours[maxAreaIdx][0];
-                cv::Point rightmost = contours[maxAreaIdx][0];
-                for (int i = 1; i < contours[maxAreaIdx].size(); i++)
-                {
-                  if (contours[maxAreaIdx][i].x < leftmost.x)
-                    leftmost = contours[maxAreaIdx][i];
-                  if (contours[maxAreaIdx][i].x > rightmost.x)
-                    rightmost = contours[maxAreaIdx][i];
-                }
+          //           war("distance to center: %d", abs(m_frame.cols/2-estimatedPos.x));
 
-                // Calculate the pixel distance between leftmost and rightmost points
-                int pixelDistance = abs(rightmost.x - leftmost.x);
+          //           // Find the leftmost and rightmost points on the contour
+          //           cv::Point leftmost = contours[maxAreaIdx][0];
+          //           cv::Point rightmost = contours[maxAreaIdx][0];
+          //           for (int i = 1; i < contours[maxAreaIdx].size(); i++)
+          //           {
+          //             if (contours[maxAreaIdx][i].x < leftmost.x)
+          //               leftmost = contours[maxAreaIdx][i];
+          //             if (contours[maxAreaIdx][i].x > rightmost.x)
+          //               rightmost = contours[maxAreaIdx][i];
+          //           }
 
-                printf("Width of the buoy %d \n", pixelDistance);
+          //           // Calculate the pixel distance between leftmost and rightmost points
+          //           int pixelDistance = abs(rightmost.x - leftmost.x);
 
-                double y_value = getYValue(pixelDistance);
-                std::cout << "The corresponding value on the Y-axis for " << pixelDistance << " pixels is: " << y_value << std::endl;
+          //           war("Width of the buoy %d", pixelDistance);
 
-                double dist_to_img_plane = 10.0 / (pixelDistance * y_value);
-                std::cout << dist_to_img_plane << " cm" << std::endl;
+          //           // double y_value = getYValue(pixelDistance);
+          //           // std::cout << "The corresponding value on the Y-axis for " << pixelDistance << " pixels is: " << y_value << std::endl;
 
-                int ref_x = m_frame.cols / 2;
-                int x_desloc;
+          //           // double dist_to_img_plane = 10.0 / (pixelDistance * y_value);
+          //           // std::cout << dist_to_img_plane << " cm" << std::endl;
 
-                x_desloc = centroid.x - ref_x;
+          //           // int ref_x = m_frame.cols / 2;
+          //           // int x_desloc;
 
-                double dist_value = getYValue(x_desloc);
-                double real_x_dist = 10.0 / (x_desloc * dist_value);
+          //           // x_desloc = centroid.x - ref_x;
 
-                double angle = atan2(real_x_dist, dist_to_img_plane);
-                double dist_to_object = std::hypot(dist_to_img_plane, real_x_dist);
+          //           // double dist_value = getYValue(x_desloc);
+          //           // double real_x_dist = 10.0 / (x_desloc * dist_value);
 
-                IMC::FuelLevel m_gen;
+          //           // double angle = atan2(real_x_dist, dist_to_img_plane);
+          //           // double dist_to_object = std::hypot(dist_to_img_plane, real_x_dist);
 
-                m_gen.value = angle;
-                m_gen.confidence = dist_to_object;
+          //           // IMC::FuelLevel m_gen;
 
-                std::cout << "Angle : " << angle << " and Magnitude : " << dist_to_object << std::endl;
-                dispatch(m_gen);
-                // buoy_x = coord_x + real_x_dist;
-                // buoy_y = coord_y + dist_to_img_plane;
-                // std::cout << "Coordenates of buoy are (" << buoy_x << "," << buoy_y << ")" << std::endl;
-              }
+          //           // m_gen.value = angle;
+          //           // m_gen.confidence = dist_to_object;
 
-              // cv::imshow("ola", m_frame);
-            }
-          }
+          //           // std::cout << "Angle : " << angle << " and Magnitude : " << dist_to_object << std::endl;
+          //           // dispatch(m_gen);
+          //           // // buoy_x = coord_x + real_x_dist;
+          //           // // buoy_y = coord_y + dist_to_img_plane;
+          //           // // std::cout << "Coordenates of buoy are (" << buoy_x << "," << buoy_y << ")" << std::endl;
+          //         }
+
+          //         cv::imshow("BuoyDetection", m_frame);
+          //       }
+          //     }
+          //   }
         }
 
-        cv::destroyAllWindows();
+        // cv::destroyAllWindows();
       }
     };
   }
