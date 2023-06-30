@@ -142,15 +142,24 @@ namespace MiniASV
       //! Main loop.
       void onMain(void)
       {
-        IMC::LblEstimate lbl;
+        // IMC::LblEstimate lbl;
+        // // obstacle_1(x, y) = 10.4;4.4
+
+        // lbl.x = 10.4;
+        // lbl.y = 4.4;
+
+        // inf("Dispatched lbl");
+
+        // dispatch(lbl);
+
+        IMC::LblRange lbl;
         // obstacle_1(x, y) = 10.4;4.4
 
-        lbl.x = 10.4;
-        lbl.y = 4.4;
+        lbl.range = 690.69;
 
         inf("Dispatched lbl");
 
-        dispatch(lbl);
+        // dispatch(lbl);
 
         while (!stopping())
         {

@@ -72,7 +72,11 @@ namespace Control
         //! Task arguments.
         Arguments m_args;
 
-        ObstacleInterface obs;
+        ObstacleInterface *obs;
+
+        EstimatedState aux_state;
+
+        double x_pos, y_pos;
 
         // From an older version
         // double big_lon = -8.59896405, small_lon = -8.5991518;
@@ -154,6 +158,7 @@ namespace Control
           // .units(Units::DegreePerSecond)
 
           bind<IMC::LblEstimate>(this);
+          bind<IMC::LblRange>(this);
 
           // val I want to compare lat:
           // 41.17546157
@@ -179,6 +184,12 @@ namespace Control
         }
 
         void
+        onResourceInitialization(void)
+        {
+          obs = new ObstacleInterface(this, m_args.in_radius);
+        }
+
+        void
         onPathActivation(void)
         {
           // Activate heading cotroller.
@@ -189,13 +200,26 @@ namespace Control
         consume(const IMC::LblEstimate *est)
         {
           inf("Received lbl");
-          obs.add_obstacle(est->x / 20 * m_args.x_size, est->y / 20 * m_args.y_size);             // obs_1
-          obs.add_obstacle(14.32 / 20 * m_args.x_size, 14.30 / 20 * m_args.y_size);               // obs_5
-          obs.add_obstacle(16.6 / 20 * m_args.x_size, 9.17 / 20 * m_args.y_size);                 // obs_3
-          obs.add_obstacle(14.8 / 20 * m_args.x_size, 21.8 / 20 * m_args.y_size);                 // obs_4
-          obs.add_obstacle(m_args.obs_x / 20 * m_args.x_size, m_args.obs_y / 20 * m_args.y_size); // obs_2
+          obs->add_obstacle(est->x / 20 * m_args.x_size, est->y / 20 * m_args.y_size);             // obs_1
+          obs->add_obstacle(14.32 / 20 * m_args.x_size, 14.30 / 20 * m_args.y_size);               // obs_5
+          obs->add_obstacle(16.6 / 20 * m_args.x_size, 9.17 / 20 * m_args.y_size);                 // obs_3
+          obs->add_obstacle(14.8 / 20 * m_args.x_size, 21.8 / 20 * m_args.y_size);                 // obs_4
+          obs->add_obstacle(m_args.obs_x / 20 * m_args.x_size, m_args.obs_y / 20 * m_args.y_size); // obs_2
 
-          inf("After lbl (x, y) = %.2f, %.2f", obs.pos[0][0], obs.pos[0][1]);
+          inf("After lbl (x, y) = %.2f, %.2f", obs->pos[0][0], obs->pos[0][1]);
+        }
+
+        void
+        consume(const IMC::LblRange *est)
+        {
+          inf("Received lbl");
+
+          double x = x_pos + (est->range / 100 * std::cos(aux_state.psi - Angles::radians(m_args.theta_rot))); // primeiro fazemos para valroes normais
+          double y = y_pos + (est->range / 100 * std::sin(aux_state.psi - Angles::radians(m_args.theta_rot)));
+
+          obs->add_obstacle(x, y);
+
+          // inf("After lbl (x, y) = %.2f, %.2f", obs.pos[0][0], obs.pos[0][1]);
         }
 
         /************FEP COORDINATESS***************/
@@ -272,6 +296,8 @@ namespace Control
           double kcorr = ts.track_pos.y / m_args.corridor;
           double akcorr = std::fabs(kcorr);
 
+          aux_state = state;
+
           bool laranja = true;
 
           double ref = 0; // Radians of vector
@@ -279,7 +305,7 @@ namespace Control
           // for testing
 
           double in_radius = m_args.in_radius, out_radius = m_args.out_radius;
-          double x_pos, y_pos;
+          // double x_pos, y_pos;
 
           // calculate x and y based on track and current state
           DUNE::Coordinates::toWGS84(state, x_pos, y_pos); // Returns coordinates in radians
@@ -298,13 +324,13 @@ namespace Control
           x_pos = latitude_to_x_pos(cateto_adj);  // degrees to pool
           y_pos = longitude_to_y_pos(cateto_opt); // degrees to pool
 
-          int index = obs.closest_object(x_pos, y_pos);
+          int index = obs->closest_object(x_pos, y_pos);
 
           // double obs_x = m_args.obs_x / 20 * m_args.x_size;
           // double obs_y = m_args.obs_y / 20 * m_args.y_size;
 
-          double obs_x = obs.pos[index][0];
-          double obs_y = obs.pos[index][1];
+          double obs_x = obs->pos[index][0];
+          double obs_y = obs->pos[index][1];
 
           // Add this later/soon
 
