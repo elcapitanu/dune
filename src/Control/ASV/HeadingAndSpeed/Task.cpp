@@ -125,6 +125,8 @@ namespace Control
         uint16_t m_rpm_eid[2];
         //! Control loops last reference
         uint32_t m_scope_ref;
+        //! Reference between heading and obstacle angle position
+        float obstacle_angle = 360;
         //! Task arguments.
         Arguments m_args;
 
@@ -229,6 +231,7 @@ namespace Control
           bind<IMC::DesiredSpeed>(this);
           bind<IMC::ControlLoops>(this);
           bind<IMC::Rpm>(this);
+          bind<IMC::FuelLevel>(this);
         }
 
         void
@@ -348,8 +351,14 @@ namespace Control
           reset();
         }
 
+        //! Only active when object isn't yet known
         void
-        consume(const IMC::Abort *msg)
+        consume(const IMC::FuelLevel *f_lev)
+        {
+          obstacle_angle = f_lev->value;
+        }
+
+        void consume(const IMC::Abort *msg)
         {
           if (msg->getDestination() != getSystemId())
             return;
@@ -409,6 +418,26 @@ namespace Control
                                           -m_args.act_diff_max,
                                           m_args.act_diff_max);
           }
+
+          // Miguel changes to point where we want!
+          if (obstacle_angle != 360)
+          {
+            err_yaw = Angles::normalizeRadian(obstacle_angle);
+            thrust_diff = m_yaw_pid.step(tstep, err_yaw);
+            // FIXME: Probably add trimming, but not needed on simulation
+            if (abs(thrust_diff) < 0.2)
+            {
+              if (thrust_diff > 0)
+              {
+                thrust_diff = 0.2;
+              }
+              else
+                thrust_diff = -0.2;
+            }
+            thrust_com = 0;
+            inf("Thrust diff: %f", thrust_diff);
+          }
+          // End of Miguel changes
 
           m_act[0].value = thrust_com + thrust_diff;
           m_act[1].value = thrust_com - thrust_diff;
