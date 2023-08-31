@@ -25,6 +25,7 @@
 // http://ec.europa.eu/idabc/eupl.html.                                     *
 //***************************************************************************
 // Author: Ricardo Martins                                                  *
+// Author: Bernardo Gabriel (adpatation for Twiggy)                         *
 //***************************************************************************
 
 function Main(root_id)
@@ -40,46 +41,35 @@ Main.prototype = new BasicSection;
 
 Main.prototype.m_fields = [
     {
-        "label": "System:",
+        "label": "Sistema:",
         "data_field": "dune_system",
         "side": "left"
     },
     {
-        "label": "Version:",
+        "label": "Versão:",
         "data_field": "dune_version",
         "side": "left"
     },
     {
-        "label": "Date:",
+        "label": "Data:",
         "data_function": function(data) { return dateToString(data.dune_time_current); },
         "side": "left"
     },
     {
-        "label": "Uptime:",
+        "label": "Tempo ativo:",
         "data_function": getUptime,
         "side": "left"
     },
     {
-        "label": "Position:",
-        "data_function": getPosition,
-        "side": "right"
-    },
-    {
-        "label": "CPU Usage:",
+        "label": "Utilização do CPU:",
         "data_function": function(data) { return getMessageValue(data, 'CpuUsage', 0); },
         "widget": new Gauge(1),
         "side": "right"
     },
     {
-        "label": "Available Storage:",
-        "data_function": function(data) { return 100 - getMessageValue(data, 'StorageUsage', 0); },
-        "widget": new Gauge(),
-        "side": "right"
-    },
-    {
-        "label": "Available Energy:",
-        "data_function": function(data) { return getMessageValue(data, 'FuelLevel', 0); },
-        "widget": new Gauge(),
+        "label": "Espaço Utilizado:",
+        "data_function": function(data) { return getMessageValue(data, 'StorageUsage', 0); },
+        "widget": new Gauge(1),
         "side": "right"
     }
 ];
@@ -273,19 +263,6 @@ function convertRadiansToDM(value)
     var degrees = Math.floor(value);
     var minutes = (value - degrees) * 60.0;
     return Array(degrees, minutes);
-}
-
-function getPosition(data, value)
-{
-    var msg = findMessage(data, 'GpsFix');
-
-    if (msg == null)
-        return 'Unknown';
-
-    var lat = convertRadiansToDM(msg.lat);
-    var str = ((msg.lat > 0) ? 'N' : 'S') + lat[0] + ' ' + lat[1].toFixed(4);
-    var lon = convertRadiansToDM(msg.lon);
-    return str + ' / ' + ((msg.lon > 0) ? 'E' : 'W') + lon[0] + ' ' + lon[1].toFixed(4);
 }
 
 function getUptime(data)
