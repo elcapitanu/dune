@@ -76,30 +76,6 @@ set(DUNE_GENERATED ${CMAKE_BINARY_DIR}/DUNEGeneratedFiles)
 
 include(${PROJECT_SOURCE_DIR}/cmake/Macros.cmake)
 
-# Define options.
-message(STATUS "")
-message(STATUS "******************************************")
-message(STATUS "***          Optional Features         ***")
-message(STATUS "******************************************")
-dune_option(PICCOLO "Include Piccolo library")
-dune_option(SHARED "Build shared library and shared plugins")
-dune_option(DEBUG "Compile with debug information enabled")
-dune_option(PROFILE "Compile with profiling and debug information enabled")
-dune_option(TLSF "Include the TLSF O(1) memory allocator")
-dune_option(QT5 "Include Qt5 based GUI")
-dune_option(DC1394 "Enable support for libdc1394")
-dune_option(V4L2 "Enable support for libv4l2")
-dune_option(JS "Enable support for SpiderMonkey javascript engine")
-dune_option(XENETH "Enable support for the Xeneth SDK")
-dune_option(BLUEVIEW "Enable support for the BlueView SDK")
-dune_option(OPENCV "Enable support for OpenCV")
-dune_option(POINTGREY "Enable support for POINTGREY")
-dune_option(EXIV2 "Enable support for Exiv2")
-dune_option(NO_RTTI "Disable support for RTTI")
-dune_option(UEYE "Enable support for IDS uEye cameras")
-dune_option(H5CPP "Enable support for hdf5 format i/o using the h5cpp library")
-dune_option(ELLIPSOIDAL "Enable ellipsoidal coordinates in (WGS84) displace")
-
 # Internationalization.
 include(${PROJECT_SOURCE_DIR}/cmake/I18N.cmake)
 
@@ -121,19 +97,6 @@ endif(PROFILE)
 set(BUILDNAME "${DUNE_SYSTEM_NAME_VAR}")
 
 include(cmake/IMC.cmake)
-
-##########################################################################
-# Piccolo                                                                #
-##########################################################################
-set(PICCOLO_MESSAGES_XML ${PROJECT_SOURCE_DIR}/private/etc/xml/Piccolo.xml)
-
-if(DUNE_PROGRAM_PYTHON)
-  add_custom_target(piccolo_messages
-    COMMAND ${DUNE_PROGRAM_PYTHON}
-    ${PROJECT_SOURCE_DIR}/private/programs/generators/piccolo_messages.py
-    ${PICCOLO_MESSAGES_XML} ${PROJECT_SOURCE_DIR}/private/src/Piccolo
-    DEPENDS ${xml})
-endif(DUNE_PROGRAM_PYTHON)
 
 ##########################################################################
 # Status Codes                                                           #
@@ -241,11 +204,6 @@ endif(DUNE_SHARED)
 
 add_dependencies(dune-core dune-version)
 
-# WGS84 Coordinate Type
-if(ELLIPSOIDAL)
-  add_definitions(-DDUNE_ELLIPSOIDAL_DISPLACE)
-endif(ELLIPSOIDAL)
-
 ##########################################################################
 #                          Tasks                                         #
 ##########################################################################
@@ -282,31 +240,6 @@ set_source_files_properties(src/Main/Launcher.cpp
   COMPILE_FLAGS "${DUNE_CXX_FLAGS}")
 target_link_libraries(dune-launcher dune-core ${DUNE_SYS_LIBS}
   ${DUNE_VENDOR_LIBS})
-
-##########################################################################
-#                          Simple programs                               #
-##########################################################################
-macro(dune_program source exclude)
-  get_filename_component(executable ${source} NAME_WE)
-  if(${exclude})
-    add_executable(${executable} EXCLUDE_FROM_ALL ${source})
-  else(${exclude})
-    add_executable(${executable} ${source})
-    set(DUNE_EXTRA_EXE ${DUNE_EXTRA_EXE} ${executable})
-  endif(${exclude})
-  set_target_properties(${executable} PROPERTIES COMPILE_FLAGS "${DUNE_CXX_FLAGS}")
-  target_link_libraries(${executable} dune-core ${DUNE_SYS_LIBS} ${DUNE_VENDOR_LIBS})
-endmacro(dune_program source)
-
-file(GLOB programs programs/*.cpp)
-foreach(program ${programs})
-  dune_program(${program} 1)
-endforeach(program ${programs})
-
-file(GLOB programs programs/utils/*.cpp)
-foreach(program ${programs})
-  dune_program(${program} 0)
-endforeach(program ${programs})
 
 ##########################################################################
 #                          Documentation                                 #
@@ -361,19 +294,6 @@ install(DIRECTORY programs/scripts DESTINATION .)
 # MinGW dependencies.
 include(cmake/MinGW.cmake)
 
-# LAUV Simulator link.
-if(DUNE_OS_WINDOWS)
-  set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL 1)
-
-  set(CPACK_NSIS_CREATE_ICONS_EXTRA "CreateShortCut          \\\\
-    '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\LAUV Simulator.lnk' \\\\
-    '$INSTDIR\\\\bin\\\\dune.exe'                            \\\\
-    '-c lauv-simulator-1 -p Simulation'")
-
-  set(CPACK_NSIS_DELETE_ICONS_EXTRA "Delete                  \\\\
-    '$SMPROGRAMS\\\\$MUI_TEMP\\\\LAUV Simulator.lnk'")
-endif(DUNE_OS_WINDOWS)
-
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${PROJECT_NAME})
 set(CPACK_PACKAGE_NAME ${PROJECT_SHORT_NAME})
 set(CPACK_PACKAGE_VENDOR ${PROJECT_VENDOR})
@@ -404,34 +324,6 @@ endif(DUNE_OS_WINDOWS)
 
 include(InstallRequiredSystemLibraries)
 include(CPack)
-
-include(programs/video-client/Program.cmake)
-include(programs/gsmux/Program.cmake)
-
-##########################################################################
-#                                 Tests                                  #
-##########################################################################
-option(TESTS "Compile test programs" FALSE)
-
-if(TESTS)
-  enable_testing()
-
-  macro(dune_test source)
-    get_filename_component(executable ${source} NAME_WE)
-    add_executable(${executable} ${source})
-    set_target_properties(${executable} PROPERTIES COMPILE_FLAGS
-      "${DUNE_CXX_FLAGS}")
-    target_link_libraries(${executable} dune-core ${DUNE_SYS_LIBS}
-      ${DUNE_VENDOR_LIBS})
-    ADD_TEST(${executable} ${executable})
-  endmacro(dune_test source)
-
-  file(GLOB_RECURSE DUNE_TESTS_SOURCES
-    "${PROJECT_SOURCE_DIR}/programs/tests/*.cpp")
-  foreach(test ${DUNE_TESTS_SOURCES})
-    dune_test(${test})
-  endforeach(test ${DUNE_TESTS_SOURCES})
-endif(TESTS)
 
 ##########################################################################
 #                                CDash                                   #
