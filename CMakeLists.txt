@@ -242,29 +242,6 @@ target_link_libraries(dune-launcher dune-core ${DUNE_SYS_LIBS}
   ${DUNE_VENDOR_LIBS})
 
 ##########################################################################
-#                          Documentation                                 #
-##########################################################################
-if(DUNE_PROGRAM_DOXYGEN AND DUNE_PROGRAM_ZIP)
-  set(DUNE_DOCS_LABEL
-    dune-${PROJECT_VERSION}-docs)
-
-  set(DUNE_DOXYGEN_DOCS_DIR
-    ${DUNE_GENERATED}/${DUNE_DOCS_LABEL})
-
-  configure_file(${PROJECT_SOURCE_DIR}/doc/Doxygen/Doxyfile.in
-    ${DUNE_GENERATED}/Doxyfile)
-
-  add_custom_target(doc
-    ${DUNE_PROGRAM_DOXYGEN} ${DUNE_GENERATED}/Doxyfile)
-
-  add_custom_target(doc_package
-    zip -r ${CMAKE_BINARY_DIR}/${DUNE_DOCS_LABEL}.zip ${DUNE_DOCS_LABEL}
-    WORKING_DIRECTORY ${DUNE_GENERATED})
-
-  add_dependencies(doc_package doc)
-endif(DUNE_PROGRAM_DOXYGEN AND DUNE_PROGRAM_ZIP)
-
-##########################################################################
 #                        Packaging/Installation                          #
 ##########################################################################
 install(TARGETS dune dune-launcher dune-core ${DUNE_EXTRA_EXE}
