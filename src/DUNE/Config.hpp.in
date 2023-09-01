@@ -57,24 +57,8 @@
 //! DUNE's build path.
 #define DUNE_PATH_BUILD "@CMAKE_BINARY_DIR@"
 
-//! DUNE was compiled with Piccolo avionics support.
-#cmakedefine DUNE_USING_PICCOLO
-//! DUNE was compiled with Qt5.
-#cmakedefine DUNE_USING_QT5
 //! DUNE was compiled with TLSF.
 #cmakedefine DUNE_USING_TLSF
-//! DUNE was compiled with JPEG library.
-#cmakedefine DUNE_USING_JPEG
-//! DUNE was compiled with DC1394 library.
-#cmakedefine DUNE_USING_DC1394
-//! DUNE was compiled with V4L2 library.
-#cmakedefine DUNE_USING_V4L2
-//! DUNE was compiled with SpiderMonkey support.
-#cmakedefine DUNE_USING_SPIDERMONKEY
-//! DUNE was compiled with support for the Xeneth SDK.
-#cmakedefine DUNE_USING_XENETH
-//! DUNE was compiled with support for the Exif library.
-#cmakedefine DUNE_USING_EXIF
 
 //! Defined on Microsoft Windows.
 #cmakedefine DUNE_OS_WINDOWS

@@ -45,15 +45,6 @@ macro(dune_probe_programs)
     message(STATUS "IMC code generation disabled")
   endif(PYTHON_EXE)
 
-  # Doxygen
-  message(STATUS "Looking for Doxygen")
-  include(FindDoxygen)
-
-  if(DOXYGEN)
-    set(DUNE_PROGRAM_DOXYGEN ${DOXYGEN})
-    message(STATUS "Source documentation enabled")
-  endif(DOXYGEN)
-
   # Info-ZIP
   message(STATUS "Looking for Info-ZIP")
   FIND_PROGRAM(ZIP_EXE NAMES zip)
