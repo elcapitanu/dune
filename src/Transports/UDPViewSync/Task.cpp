@@ -92,6 +92,7 @@ namespace Transports
       void
       onResourceAcquisition(void)
       {
+        m_sock.bind(m_args.port, Address::Any, false);
       }
 
       //! Initialize resources.
