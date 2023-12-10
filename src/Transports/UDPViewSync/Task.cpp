@@ -52,6 +52,8 @@ namespace Transports
 
     struct Task: public DUNE::Tasks::Task
     {
+      //! UDP Socket.
+      UDPSocket m_sock;
       //! Task arguments.
       Arguments m_args;
       
