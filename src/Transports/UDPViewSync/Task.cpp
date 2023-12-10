@@ -31,6 +31,9 @@
 // DUNE headers.
 #include <DUNE/DUNE.hpp>
 
+// Local headers.
+#include "Reader.hpp"
+
 namespace Transports
 {
   //! Implementation of a UDP-based View Synchronous Communication protocol,
@@ -56,12 +59,15 @@ namespace Transports
       UDPSocket m_sock;
       //! Task arguments.
       Arguments m_args;
+      //! Reader thread.
+      Reader* m_reader;
       
       //! Constructor.
       //! @param[in] name task name.
       //! @param[in] ctx context.
       Task(const std::string& name, Tasks::Context& ctx):
-        DUNE::Tasks::Task(name, ctx)
+        DUNE::Tasks::Task(name, ctx),
+        m_reader(NULL)
       {
         param("Port", m_args.port)
         .defaultValue("6000")
@@ -93,6 +99,9 @@ namespace Transports
       onResourceAcquisition(void)
       {
         m_sock.bind(m_args.port, Address::Any, false);
+
+        m_reader = new Reader(*this, m_sock);
+        m_reader->start();
       }
 
       //! Initialize resources.
@@ -105,6 +114,12 @@ namespace Transports
       void
       onResourceRelease(void)
       {
+        if (m_reader != NULL)
+        {
+          m_reader->stopAndJoin();
+          delete m_reader;
+          m_reader = NULL;
+        }
       }
 
       //! Main loop.
