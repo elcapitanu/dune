@@ -43,8 +43,16 @@ namespace Transports
   {
     using DUNE_NAMESPACES;
 
+    //! %Task arguments.
+    struct Arguments
+    {
+    };
+
     struct Task: public DUNE::Tasks::Task
     {
+      //! Task arguments.
+      Arguments m_args;
+      
       //! Constructor.
       //! @param[in] name task name.
       //! @param[in] ctx context.
