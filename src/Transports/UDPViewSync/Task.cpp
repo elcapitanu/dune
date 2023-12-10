@@ -46,6 +46,8 @@ namespace Transports
     //! %Task arguments.
     struct Arguments
     {
+      // UDP port.
+      unsigned port;
     };
 
     struct Task: public DUNE::Tasks::Task
@@ -59,6 +61,11 @@ namespace Transports
       Task(const std::string& name, Tasks::Context& ctx):
         DUNE::Tasks::Task(name, ctx)
       {
+        param("Port", m_args.port)
+        .defaultValue("6000")
+        .description("UDP port to listen on")
+        .minimumValue("6000")
+        .maximumValue("6063");
       }
 
       //! Update internal state with new parameter values.
