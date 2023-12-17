@@ -32,6 +32,7 @@
 #include <DUNE/DUNE.hpp>
 
 // Local headers.
+#include "Parser.hpp"
 #include "Reader.hpp"
 
 namespace Transports
@@ -59,6 +60,8 @@ namespace Transports
       UDPSocket m_sock;
       //! Task arguments.
       Arguments m_args;
+      //! Message parser.
+      Parser* m_parser;
       //! Reader thread.
       Reader* m_reader;
       
@@ -103,6 +106,8 @@ namespace Transports
       {
         m_sock.bind(m_args.port, Address::Any, false);
 
+        m_parser = new Parser;
+
         m_reader = new Reader(*this, m_sock);
         m_reader->start();
       }
@@ -135,6 +140,8 @@ namespace Transports
           return;
 
         debug("%s", sanitize(msg->value).c_str());
+
+        m_parser->process(msg->value);
 
         return;
       }
