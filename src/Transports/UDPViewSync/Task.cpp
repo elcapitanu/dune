@@ -74,6 +74,9 @@ namespace Transports
         .description("UDP port to listen on")
         .minimumValue("6000")
         .maximumValue("6063");
+
+        bind<IMC::DevDataText>(this); 
+        bind<IMC::IoEvent>(this);
       }
 
       //! Update internal state with new parameter values.
@@ -120,6 +123,33 @@ namespace Transports
           delete m_reader;
           m_reader = NULL;
         }
+      }
+
+      void
+      consume(const IMC::DevDataText* msg)
+      {
+        if (msg->getDestination() != getSystemId())
+          return;
+
+        if (msg->getDestinationEntity() != getEntityId())
+          return;
+
+        debug("%s", sanitize(msg->value).c_str());
+
+        return;
+      }
+
+      void
+      consume(const IMC::IoEvent* msg)
+      {
+        if (msg->getDestination() != getSystemId())
+          return;
+
+        if (msg->getDestinationEntity() != getEntityId())
+          return;
+
+        if (msg->type == IMC::IoEvent::IOV_TYPE_INPUT_ERROR)
+          throw RestartNeeded(msg->error, 5);
       }
 
       //! Main loop.

@@ -39,48 +39,82 @@ namespace Transports
   {
     using DUNE_NAMESPACES;
 
+    //! Read buffer size.
+    static const size_t c_read_buffer_size = 4096;
+    //! Line termination character.
+    static const char c_line_term = '\n';
+    // Poll timeout in milliseconds.
+    static const int c_poll_tout = 1000;
+
     class Reader: public Concurrency::Thread
     {
     public:
       Reader(Tasks::Task& task, UDPSocket& sock):
         m_task(task),
         m_sock(sock)
-      {  }
+      {
+        m_buffer.resize(c_read_buffer_size);
+      }
 
     private:
-      // Buffer capacity.
-      static const int c_bfr_size = 65535;
-      // Poll timeout in milliseconds.
-      static const int c_poll_tout = 1000;
       // Parent task.
       Tasks::Task& m_task;
       // Reference to socket used for sending data.
       UDPSocket& m_sock;
+      //! Internal read buffer.
+      std::vector<uint8_t> m_buffer;
+      //! Current line.
+      std::string m_line;
+
+      void
+      dispatch(IMC::Message& msg)
+      {
+        msg.setDestination(m_task.getSystemId());
+        msg.setDestinationEntity(m_task.getEntityId());
+        m_task.dispatch(msg, DF_LOOP_BACK);
+      }
+
+      void
+      read(void)
+      {
+        if (!Poll::poll(m_sock, c_poll_tout / 1000.0))
+          return;
+
+        Address addr;
+
+        size_t rv = m_sock.read(&m_buffer[0], m_buffer.size(), &addr);
+        if (rv == 0)
+          throw std::runtime_error(DTR("invalid read size"));
+
+        for (size_t i = 0; i < rv; ++i)
+        {
+          m_line.push_back(m_buffer[i]);
+          if (m_buffer[i] == c_line_term)
+          {
+            IMC::DevDataText line;
+            line.value = m_line;
+            dispatch(line);
+            m_line.clear();
+          }
+        }
+      }
 
       void
       run(void)
       {
-        Address addr;
-        double poll_tout = c_poll_tout / 1000.0;
-
         while (!isStopping())
         {
           try
           {
-            if (!Poll::poll(m_sock, poll_tout))
-              continue;
-
-            uint8_t *bfr = new uint8_t[c_bfr_size];
-            uint16_t rv = m_sock.read(bfr, c_bfr_size, &addr);
-
-            if (rv)
-              m_task.war("%s: %s", addr.c_str() , sanitize(String::str((char* ) bfr)).c_str());
-
-            delete[] bfr;
+            read();
           }
-          catch (std::exception &e)
+          catch (std::runtime_error& e)
           {
-            m_task.debug("error while unpacking message: %s", e.what());
+            IMC::IoEvent evt;
+            evt.type = IMC::IoEvent::IOV_TYPE_INPUT_ERROR;
+            evt.error = e.what();
+            dispatch(evt);
+            break;
           }
         }
       }
