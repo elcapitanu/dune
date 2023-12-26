@@ -25,6 +25,7 @@
 // http://ec.europa.eu/idabc/eupl.html.                                     *
 //***************************************************************************
 // Author: Bernardo Gabriel                                                 *
+// Author: João Bogas                                                       *
 //***************************************************************************
 
 #ifndef TRANSPORTS_UDPVIEWSYNC_READER_HPP_INCLUDED_
