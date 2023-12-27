@@ -76,14 +76,15 @@ namespace Transports
       //! Array with group members.
       std::array<Member, c_total_members> m_members;
       //! Vector time.
-      std::array<unsigned, c_total_members> m_vector_time = {0};
+      std::array<unsigned, c_total_members> m_vector_time;
       
       //! Constructor.
       //! @param[in] name task name.
       //! @param[in] ctx context.
       Task(const std::string& name, Tasks::Context& ctx):
         DUNE::Tasks::Task(name, ctx),
-        m_reader(NULL)
+        m_reader(NULL),
+        m_vector_time({0})
       {
         param("Port", m_args.port)
         .defaultValue("6000")
