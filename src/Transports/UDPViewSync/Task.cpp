@@ -49,13 +49,6 @@ namespace Transports
     //! Total number of group members.
     static const unsigned c_total_members = 2;
 
-    //! Task arguments.
-    struct Arguments
-    {
-      // UDP port.
-      unsigned port;
-    };
-
     //! Member struct.
     struct Member
     {
@@ -69,10 +62,10 @@ namespace Transports
     {
       //! UDP Socket.
       UDPSocket m_sock;
-      //! Task arguments.
-      Arguments m_args;
       //! Reader thread.
       Reader* m_reader;
+      // Process identifier.
+      unsigned m_id;
       //! Array with group members.
       std::array<Member, c_total_members> m_members;
       //! Vector time.
@@ -86,10 +79,8 @@ namespace Transports
         m_reader(NULL),
         m_vector_time({0})
       {
-        param("Port", m_args.port)
-        .description("UDP port to listen on")
-        .minimumValue("6000")
-        .maximumValue("6063");
+        param("Id", m_id)
+        .description("UDP port to listen on");
 
         for (unsigned i = 0; i < c_total_members; ++i)
         {
@@ -129,7 +120,7 @@ namespace Transports
       void
       onResourceAcquisition(void)
       {
-        m_sock.bind(m_args.port, Address::Any, false);
+        m_sock.bind(m_members[m_id].port , Address::Any, false);
 
         m_reader = new Reader(*this, m_sock);
         m_reader->start();
@@ -181,18 +172,37 @@ namespace Transports
       void
       consume(const IMC::Temperature* msg)
       {
-        send_multicast(std::to_string(msg->value));
+        send_multicast("data", std::to_string(msg->value));
+      }
+
+      std::string
+      prepare_message(const std::string header, const std::string content)
+      {
+        std::string message = "[";
+
+        for (unsigned time: m_vector_time)
+          message += std::to_string(time) + ",";
+
+        message.replace(message.end()-1, message.end(), 1, ']');
+
+        message += "," + header + "," + content + ",*\n";
+
+        return message;
       }
 
       void
-      send_multicast(const std::string msg)
-      {        
-        for (Member member: m_members)
+      send_multicast(const std::string header, const std::string content)
+      {
+        m_vector_time[m_id]++;
+
+        const std::string message = prepare_message(header, content);
+
+        for (unsigned iter = 0; iter < c_total_members; iter++)
         {
-          if (member.address == "localhost" && member.port == m_args.port)
+          if (iter == m_id)
             continue;
 
-          m_sock.write((const uint8_t*) msg.c_str(), msg.size(), member.address, member.port);
+          m_sock.write((const uint8_t*) message.c_str(), message.size(), m_members[iter].address, m_members[iter].port);
         }
       }
 
