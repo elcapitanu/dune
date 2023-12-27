@@ -87,7 +87,6 @@ namespace Transports
         m_vector_time({0})
       {
         param("Port", m_args.port)
-        .defaultValue("6000")
         .description("UDP port to listen on")
         .minimumValue("6000")
         .maximumValue("6063");
@@ -96,12 +95,10 @@ namespace Transports
         {
           std::string label = String::str("Member %u - Address", i);
           param(label, m_members[i].address)
-          .defaultValue("127.0.0.1")
           .description("Member address");
 
           label = String::str("Member %u - Port", i);
           param(label, m_members[i].port)
-          .defaultValue("6000" + i)
           .description("Member port");
         }
 
