@@ -46,7 +46,9 @@ namespace Transports
   {
     using DUNE_NAMESPACES;
 
-    //! %Task arguments.
+    //! Total number of group members.
+    static const unsigned c_total_members = 4;
+
     struct Arguments
     {
       // UDP port.
