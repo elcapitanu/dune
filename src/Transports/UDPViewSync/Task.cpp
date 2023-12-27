@@ -72,6 +72,8 @@ namespace Transports
       Arguments m_args;
       //! Reader thread.
       Reader* m_reader;
+      //! Array with group members.
+      std::array<Member, c_total_members> m_members;
       
       //! Constructor.
       //! @param[in] name task name.
