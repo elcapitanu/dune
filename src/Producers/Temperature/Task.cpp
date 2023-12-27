@@ -102,6 +102,9 @@ namespace Producers
 
         while (!stopping())
         {
+          if (m_delay_ms == 0.0)
+            continue;
+
           dispatch(msg);
           msg.value += 0.1;
           Delay::waitMsec(m_delay_ms);
