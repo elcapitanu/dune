@@ -69,7 +69,7 @@ namespace Transports
       //! Array with group members.
       std::array<Member, c_total_members> m_members;
       //! Vector time.
-      std::array<unsigned, c_total_members> m_vector_time;
+      std::array<unsigned, c_total_members> m_time_vector;
       
       //! Constructor.
       //! @param[in] name task name.
@@ -77,7 +77,7 @@ namespace Transports
       Task(const std::string& name, Tasks::Context& ctx):
         DUNE::Tasks::Task(name, ctx),
         m_reader(NULL),
-        m_vector_time({0})
+        m_time_vector({0})
       {
         param("Id", m_id)
         .description("UDP port to listen on");
@@ -154,6 +154,8 @@ namespace Transports
           return;
 
         debug("%s", sanitize(msg->value).c_str());
+
+        interpret_message(msg->value);
       }
 
       void
@@ -180,8 +182,8 @@ namespace Transports
       {
         std::string message = "[";
 
-        for (unsigned time: m_vector_time)
-          message += std::to_string(time) + ",";
+        for (unsigned time: m_time_vector)
+          message += std::to_string(time) + "-";
 
         message.replace(message.end()-1, message.end(), 1, ']');
 
@@ -197,7 +199,7 @@ namespace Transports
       void
       send_multicast(const std::string header, const std::string content)
       {
-        m_vector_time[m_id]++;
+        m_time_vector[m_id]++;
 
         const std::string message = prepare_message(header, content);
 
@@ -208,6 +210,47 @@ namespace Transports
 
           m_sock.write((const uint8_t*) message.c_str(), message.size(), m_members[iter].address, m_members[iter].port);
         }
+      }
+
+      bool
+      compare_time_vectors(const std::array<unsigned, c_total_members> vector1, const std::array<unsigned, c_total_members> vector2)
+      {
+        (void) vector1;
+        (void) vector2;
+        return true;
+      }
+
+      std::array<unsigned, c_total_members>
+      interpret_time_vector(const std::string time_vector)
+      {
+        std::vector<std::string> parts;
+        String::split(time_vector, "-", parts);
+
+        std::array<unsigned, c_total_members> tv;
+        for (unsigned itr = 0; itr < c_total_members; itr++)
+          tv[itr] = atoi(parts[itr].c_str());
+
+        return tv;
+      }
+
+      void
+      interpret_message(const std::string msg)
+      {
+        std::vector<std::string> parts;
+        String::split(msg, ",", parts);
+        parts.pop_back();
+
+        if (!String::startsWith(parts[0], "[") || !String::endsWith(parts[0], "]"))
+          return;
+        
+        parts[0].erase(0,1);
+        parts[0].pop_back();
+        std::array<unsigned, c_total_members> tv = interpret_time_vector(parts[0]);
+
+        compare_time_vectors(m_time_vector, tv);
+
+        std::string header = parts[1];
+        std::string content = parts[2];
       }
 
       //! Main loop.
