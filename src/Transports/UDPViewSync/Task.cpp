@@ -75,6 +75,8 @@ namespace Transports
       Reader* m_reader;
       //! Array with group members.
       std::array<Member, c_total_members> m_members;
+      //! Vector time.
+      std::array<unsigned, c_total_members> m_vector_time = {0};
       
       //! Constructor.
       //! @param[in] name task name.
