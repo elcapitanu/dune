@@ -185,7 +185,11 @@ namespace Transports
 
         message.replace(message.end()-1, message.end(), 1, ']');
 
-        message += "," + header + "," + content + ",*\n";
+        message += "," + header + "," + content + ",*";
+
+        // message += Algorithms::CRC16::compute((uint8_t*) message.c_str(), message.size()-1);
+
+        message.push_back('\n');
 
         return message;
       }
