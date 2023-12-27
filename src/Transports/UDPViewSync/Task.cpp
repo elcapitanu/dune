@@ -165,8 +165,6 @@ namespace Transports
           return;
 
         debug("%s", sanitize(msg->value).c_str());
-
-        return;
       }
 
       void
