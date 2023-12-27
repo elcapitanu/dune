@@ -88,6 +88,19 @@ namespace Transports
         .minimumValue("6000")
         .maximumValue("6063");
 
+        for (unsigned i = 0; i < c_total_members; ++i)
+        {
+          std::string label = String::str("Member %u - Address", i);
+          param(label, m_members[i].address)
+          .defaultValue("127.0.0.1")
+          .description("Member address");
+
+          label = String::str("Member %u - Port", i);
+          param(label, m_members[i].port)
+          .defaultValue("6000" + i)
+          .description("Member port");
+        }
+
         bind<IMC::DevDataText>(this); 
         bind<IMC::IoEvent>(this);
       }
