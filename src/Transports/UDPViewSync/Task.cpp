@@ -181,7 +181,18 @@ namespace Transports
       void
       consume(const IMC::Temperature* msg)
       {
-        (void) msg;
+      }
+
+      void
+      send_multicast(const std::string msg)
+      {        
+        for (Member member: m_members)
+        {
+          if (member.address == "localhost" && member.port == m_args.port)
+            continue;
+
+          m_sock.write((const uint8_t*) msg.c_str(), msg.size(), member.address, member.port);
+        }
       }
 
       //! Main loop.
