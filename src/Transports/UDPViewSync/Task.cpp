@@ -181,6 +181,7 @@ namespace Transports
       void
       consume(const IMC::Temperature* msg)
       {
+        send_multicast(std::to_string(msg->value));
       }
 
       void
