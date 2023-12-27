@@ -49,6 +49,7 @@ namespace Transports
     //! Total number of group members.
     static const unsigned c_total_members = 4;
 
+    //! Task arguments.
     struct Arguments
     {
       // UDP port.
