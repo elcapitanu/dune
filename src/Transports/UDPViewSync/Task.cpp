@@ -55,6 +55,15 @@ namespace Transports
       unsigned port;
     };
 
+    //! Member struct.
+    struct Member
+    {
+      // IPV4 address.
+      Address address;
+      // UDP port.
+      unsigned port;
+    };
+
     struct Task: public DUNE::Tasks::Task
     {
       //! UDP Socket.
