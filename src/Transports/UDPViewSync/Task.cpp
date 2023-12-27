@@ -107,6 +107,7 @@ namespace Transports
 
         bind<IMC::DevDataText>(this); 
         bind<IMC::IoEvent>(this);
+        bind<IMC::Temperature>(this);
       }
 
       //! Update internal state with new parameter values.
@@ -178,6 +179,12 @@ namespace Transports
 
         if (msg->type == IMC::IoEvent::IOV_TYPE_INPUT_ERROR)
           throw RestartNeeded(msg->error, 5);
+      }
+
+      void
+      consume(const IMC::Temperature* msg)
+      {
+        (void) msg;
       }
 
       //! Main loop.
