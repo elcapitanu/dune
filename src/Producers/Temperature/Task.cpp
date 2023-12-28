@@ -102,7 +102,7 @@ namespace Producers
 
         while (!stopping())
         {
-          if (m_delay_ms == 0.0)
+          if (m_delay_ms == 0)
             continue;
 
           dispatch(msg);
