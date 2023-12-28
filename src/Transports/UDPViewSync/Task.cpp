@@ -337,6 +337,8 @@ namespace Transports
       void
       onMain(void)
       {
+        while(!String::endsWith(Format::getTimeSafe(), "0"));
+
         while (!stopping())
         {
           waitForMessages(0.1);
