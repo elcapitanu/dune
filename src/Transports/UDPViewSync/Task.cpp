@@ -58,6 +58,19 @@ namespace Transports
       unsigned port;
     };
 
+    //! Member struct.
+    struct Message
+    {
+      // Time vector.
+      std::array<unsigned, c_total_members> time_vector;
+      // Process identifier.
+      unsigned id;
+      // Header of message.
+      std::string header;
+      // Content of message.
+      std::string content;
+    };
+
     struct Task: public DUNE::Tasks::Task
     {
       //! UDP Socket.
@@ -70,6 +83,8 @@ namespace Transports
       std::array<Member, c_total_members> m_members;
       //! Vector time.
       std::array<unsigned, c_total_members> m_time_vector;
+      //! Message delay queue.
+      std::vector<Message> m_queue;
       
       //! Constructor.
       //! @param[in] name task name.
@@ -153,7 +168,7 @@ namespace Transports
         if (msg->getDestinationEntity() != getEntityId())
           return;
 
-        debug("%s", sanitize(msg->value).c_str());
+        trace("%s", sanitize(msg->value).c_str());
 
         interpret_message(msg->value);
       }
@@ -177,6 +192,37 @@ namespace Transports
         send_multicast("data", std::to_string(msg->value));
       }
 
+      void
+      deliver_message(const Message msg)
+      {
+        for (unsigned itr = 0; itr < c_total_members; itr++)
+        {
+          if (msg.time_vector[itr] > m_time_vector[itr])
+          {
+            m_time_vector[itr] = msg.time_vector[itr];
+          }
+        }
+      }
+
+      void
+      check_queue()
+      {
+        unsigned messages = m_queue.size();
+
+        if (!messages)
+          return;
+
+        for (unsigned itr = 0; itr < messages; itr++)
+        {
+          if (validate_time_vector(m_queue[itr], true))
+          {
+            deliver_message(m_queue[itr]);
+            m_queue.erase(m_queue.begin() + itr);
+            break;
+          }
+        }
+      }
+
       std::string
       prepare_message(const std::string header, const std::string content)
       {
@@ -187,7 +233,7 @@ namespace Transports
 
         message.replace(message.end()-1, message.end(), 1, ']');
 
-        message += "," + header + "," + content + ",*";
+        message += "," + std::to_string(m_id) + "," + header + "," + content + ",*";
 
         // message += Algorithms::CRC16::compute((uint8_t*) message.c_str(), message.size()-1);
 
@@ -220,6 +266,34 @@ namespace Transports
         return true;
       }
 
+      bool
+      validate_time_vector(const Message message, const bool queue = false)
+      {
+        for (unsigned itr = 0; itr < c_total_members; itr++)
+        {
+          if (itr == message.id)
+          {
+            if (message.time_vector[itr] > m_time_vector[itr] + 1)
+            {
+              if (!queue)
+                m_queue.push_back(message);
+              return false;
+            }
+          }
+          else
+          {
+            if (message.time_vector[itr] > m_time_vector[itr])
+            {
+              if (!queue)
+                m_queue.push_back(message);
+              return false;
+            }
+          }
+        }
+
+        return true;
+      }
+
       std::array<unsigned, c_total_members>
       interpret_time_vector(const std::string time_vector)
       {
@@ -247,10 +321,14 @@ namespace Transports
         parts[0].pop_back();
         std::array<unsigned, c_total_members> tv = interpret_time_vector(parts[0]);
 
-        compare_time_vectors(m_time_vector, tv);
+        Message message;
+        message.time_vector = tv;
+        message.id = atoi(parts[1].c_str());
+        message.header = parts[2];
+        message.content = parts[3];
 
-        std::string header = parts[1];
-        std::string content = parts[2];
+        if (validate_time_vector(message))
+          deliver_message(message);
       }
 
       //! Main loop.
@@ -259,7 +337,9 @@ namespace Transports
       {
         while (!stopping())
         {
-          waitForMessages(1.0);
+          waitForMessages(0.1);
+
+          check_queue();
         }
       }
     };
