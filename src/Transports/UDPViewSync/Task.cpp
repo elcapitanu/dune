@@ -312,7 +312,9 @@ namespace Transports
       {
         std::vector<std::string> parts;
         String::split(msg, ",", parts);
-        parts.pop_back();
+
+        if (parts.size() != 5)
+          return;
 
         if (!String::startsWith(parts[0], "[") || !String::endsWith(parts[0], "]"))
           return;
