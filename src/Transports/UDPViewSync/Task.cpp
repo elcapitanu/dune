@@ -345,6 +345,9 @@ namespace Transports
 
           check_queue();
         }
+
+        for(unsigned t: m_time_vector)
+          inf("%u", t);
       }
     };
   }
