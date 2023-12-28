@@ -47,7 +47,7 @@ namespace Transports
     using DUNE_NAMESPACES;
 
     //! Total number of group members.
-    static const unsigned c_total_members = 2;
+    static const unsigned c_total_members = 3;
 
     //! Member struct.
     struct Member
