@@ -49,6 +49,13 @@ namespace Transports
     //! Total number of group members.
     static const unsigned c_total_members = 3;
 
+    enum UDPVS_state
+    {
+      IDLE,
+      ACTIVE,
+      ERROR
+    };
+
     //! Member struct.
     struct Member
     {
@@ -85,6 +92,8 @@ namespace Transports
       std::array<unsigned, c_total_members> m_time_vector;
       //! Message delay queue.
       std::vector<Message> m_queue;
+      //! Current state.
+      UDPVS_state m_state;
       
       //! Constructor.
       //! @param[in] name task name.
@@ -92,12 +101,11 @@ namespace Transports
       Task(const std::string& name, Tasks::Context& ctx):
         DUNE::Tasks::Task(name, ctx),
         m_reader(NULL),
-        m_time_vector({0})
-      {
-        while(!String::endsWith(Format::getTimeSafe(), "0"));
-        
+        m_time_vector({0}),
+        m_state(IDLE)
+      {        
         param("Id", m_id)
-        .description("UDP port to listen on");
+        .description("Process identifier");
 
         for (unsigned i = 0; i < c_total_members; ++i)
         {
@@ -191,6 +199,9 @@ namespace Transports
       void
       consume(const IMC::Temperature* msg)
       {
+        if (m_state != ACTIVE)
+          return;
+
         send_multicast("data", std::to_string(msg->value));
       }
 
@@ -339,12 +350,16 @@ namespace Transports
       void
       onMain(void)
       {
-        Time::Counter<float> test(10.0);
+        while(!String::endsWith(Format::getTimeSafe(), "0"));
 
+        m_state = ACTIVE;
+        
+        Time::Counter<float> test(5.0);
+        
         while (!stopping())
         {
           if (test.overflow())
-            requestDeactivation();
+            m_state = IDLE;
 
           waitForMessages(0.1);
 
