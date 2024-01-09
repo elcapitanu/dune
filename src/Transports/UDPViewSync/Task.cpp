@@ -94,6 +94,8 @@ namespace Transports
         m_reader(NULL),
         m_time_vector({0})
       {
+        while(!String::endsWith(Format::getTimeSafe(), "0"));
+        
         param("Id", m_id)
         .description("UDP port to listen on");
 
@@ -337,10 +339,13 @@ namespace Transports
       void
       onMain(void)
       {
-        while(!String::endsWith(Format::getTimeSafe(), "0"));
+        Time::Counter<float> test(10.0);
 
         while (!stopping())
         {
+          if (test.overflow())
+            requestDeactivation();
+
           waitForMessages(0.1);
 
           check_queue();
