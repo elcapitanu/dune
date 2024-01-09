@@ -37,7 +37,7 @@
 namespace Transports
 {
   //! Implementation of a UDP-based View Synchronous Communication protocol,
-  //! Based of https://www.researchgate.net/publication/200030099_Lightweight_Causal_and_Atomic_Group_Multicast.
+  //! Based on https://www.researchgate.net/publication/200030099_Lightweight_Causal_and_Atomic_Group_Multicast.
   //!
   //! Insert explanation on task behaviour here.
   //! @author Bernardo Gabriel
