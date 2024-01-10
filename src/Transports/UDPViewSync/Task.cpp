@@ -350,16 +350,23 @@ namespace Transports
       void
       onMain(void)
       {
-        while(!String::endsWith(Format::getTimeSafe(), "0"));
+        // while(!String::endsWith(Format::getTimeSafe(), "0"));
 
         m_state = ACTIVE;
         
-        Time::Counter<float> test(5.0);
+        // Time::Counter<float> test(20.0);
+        Time::Counter<float> p(1.0);
         
         while (!stopping())
         {
-          if (test.overflow())
-            m_state = IDLE;
+          // if (test.overflow())
+            // m_state = IDLE;
+
+          if (p.overflow())
+          {
+            inf("%u | %u | %u", m_time_vector[0], m_time_vector[1], m_time_vector[2]);
+            p.reset();
+          }
 
           waitForMessages(0.1);
 
