@@ -34,6 +34,8 @@
 // Local headers.
 #include "Reader.hpp"
 
+#include <unordered_map>
+
 namespace Transports
 {
   //! Implementation of a UDP-based View Synchronous Communication protocol,
@@ -65,7 +67,7 @@ namespace Transports
       unsigned port;
     };
 
-    //! Member struct.
+    //! Message struct.
     struct Message
     {
       // Time vector.
@@ -76,6 +78,15 @@ namespace Transports
       std::string header;
       // Content of message.
       std::string content;
+    };
+
+    //! Unstable Message struct.
+    struct Unstable_Message
+    {
+      // Members who ack.
+      std::array<bool, c_total_members> ack;
+      // Message.
+      std::string message;
     };
 
     struct Task: public DUNE::Tasks::Task
@@ -94,6 +105,8 @@ namespace Transports
       std::vector<Message> m_queue;
       //! Current state.
       UDPVS_state m_state;
+
+      std::unordered_map<unsigned, Unstable_Message> m_unstable_messages;
       
       //! Constructor.
       //! @param[in] name task name.
@@ -256,6 +269,18 @@ namespace Transports
       }
 
       void
+      send_ack(const unsigned dest, const unsigned msg)
+      {
+        std::string message = "ACK,";
+
+        message += std::to_string(m_id) + "," + std::to_string(msg) + ",*";
+
+        message.push_back('\n');
+
+        m_sock.write((const uint8_t*) message.c_str(), message.size(), m_members[dest].address, m_members[dest].port);
+      }
+
+      void
       send_multicast(const std::string header, const std::string content)
       {
         m_time_vector[m_id]++;
@@ -269,6 +294,15 @@ namespace Transports
 
           m_sock.write((const uint8_t*) message.c_str(), message.size(), m_members[iter].address, m_members[iter].port);
         }
+
+        Unstable_Message msg;
+
+        msg.message = message;
+
+        msg.ack = {false};
+        msg.ack[m_id] = true;
+
+        m_unstable_messages.insert({m_time_vector[m_id], msg});
       }
 
       bool
@@ -321,10 +355,30 @@ namespace Transports
       }
 
       void
+      interpret_ack(const unsigned src, const unsigned message)
+      {
+        m_unstable_messages[message].ack[src] = true;
+        
+        for (bool itr: m_unstable_messages[message].ack)
+        {
+          if (!itr)
+            return;
+        }
+
+        m_unstable_messages.erase(message);
+      }
+
+      void
       interpret_message(const std::string msg)
       {
         std::vector<std::string> parts;
         String::split(msg, ",", parts);
+
+        if (parts[0] == "ACK")
+        {
+          interpret_ack(atoi(parts[1].c_str()), atoi(parts[2].c_str()));
+          return;
+        }
 
         if (parts.size() != 5)
           return;
@@ -344,13 +398,15 @@ namespace Transports
 
         if (validate_time_vector(message))
           deliver_message(message);
+
+        send_ack(message.id, message.time_vector[message.id]);
       }
 
       //! Main loop.
       void
       onMain(void)
       {
-        // while(!String::endsWith(Format::getTimeSafe(), "0"));
+        while(!String::endsWith(Format::getTimeSafe(), "0"));
 
         m_state = ACTIVE;
         
@@ -364,7 +420,8 @@ namespace Transports
 
           if (p.overflow())
           {
-            inf("%u | %u | %u", m_time_vector[0], m_time_vector[1], m_time_vector[2]);
+            // inf("%u | %u | %u", m_time_vector[0], m_time_vector[1], m_time_vector[2]);
+            inf("%lu", m_unstable_messages.size());
             p.reset();
           }
 
