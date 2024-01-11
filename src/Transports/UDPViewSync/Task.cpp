@@ -306,14 +306,6 @@ namespace Transports
       }
 
       bool
-      compare_time_vectors(const std::array<unsigned, c_total_members> vector1, const std::array<unsigned, c_total_members> vector2)
-      {
-        (void) vector1;
-        (void) vector2;
-        return true;
-      }
-
-      bool
       validate_time_vector(const Message message, const bool queue = false)
       {
         for (unsigned itr = 0; itr < c_total_members; itr++)
