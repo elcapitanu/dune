@@ -162,6 +162,8 @@ namespace Transports
 
         m_reader = new Reader(*this, m_sock);
         m_reader->start();
+
+        setEntityState(IMC::EntityState::ESTA_NORMAL, Utils::String::str(DTR("active")));
       }
 
       //! Initialize resources.
@@ -412,14 +414,17 @@ namespace Transports
 
           if (p.overflow())
           {
-            // inf("%u | %u | %u", m_time_vector[0], m_time_vector[1], m_time_vector[2]);
-            inf("%lu", m_unstable_messages.size());
+            // inf("%lu", m_unstable_messages.size());
             p.reset();
           }
 
           waitForMessages(0.1);
 
           check_queue();
+
+          char bufer_entity[128];
+          sprintf(bufer_entity, "time vector: [%u, %u, %u]", m_time_vector[0], m_time_vector[1], m_time_vector[2]);
+          setEntityState(IMC::EntityState::ESTA_NORMAL, Utils::String::str(DTR(bufer_entity)));
         }
 
         for(unsigned t: m_time_vector)
