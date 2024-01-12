@@ -87,6 +87,8 @@ namespace Transports
       std::array<bool, c_total_members> ack;
       // Message.
       std::string message;
+      // Timer.
+      Time::Counter<float> timer;
     };
 
     struct Task: public DUNE::Tasks::Task
@@ -105,9 +107,11 @@ namespace Transports
       std::vector<Message> m_queue;
       //! Current state.
       UDPVS_state m_state;
-
+      //! Unordered map with unstable messages.
       std::unordered_map<unsigned, Unstable_Message> m_unstable_messages;
-      
+      //! View.
+      std::array<bool, c_total_members> m_view;
+
       //! Constructor.
       //! @param[in] name task name.
       //! @param[in] ctx context.
@@ -115,7 +119,8 @@ namespace Transports
         DUNE::Tasks::Task(name, ctx),
         m_reader(NULL),
         m_time_vector({0}),
-        m_state(IDLE)
+        m_state(IDLE),
+        m_view({false})
       {        
         param("Id", m_id)
         .description("Process identifier");
@@ -207,8 +212,9 @@ namespace Transports
         if (msg->getDestinationEntity() != getEntityId())
           return;
 
-        if (msg->type == IMC::IoEvent::IOV_TYPE_INPUT_ERROR)
-          throw RestartNeeded(msg->error, 5);
+        err("%s", msg->error.c_str());
+        // if (msg->type == IMC::IoEvent::IOV_TYPE_INPUT_ERROR)
+        //   throw RestartNeeded(msg->error, 5);
       }
 
       void
@@ -251,6 +257,27 @@ namespace Transports
         }
       }
 
+      void
+      check_unstable_messages()
+      {
+        if (!m_unstable_messages.size())
+          return;
+
+        for (auto& it: m_unstable_messages)
+        {
+          if (it.second.timer.overflow())
+          {
+            for (unsigned j = 0; j < c_total_members; j++)
+            {
+              if (!it.second.ack[j])
+                m_sock.write((const uint8_t *)it.second.message.c_str(), it.second.message.size(), m_members[j].address, m_members[j].port);
+            }
+
+            it.second.timer.setTop(5.0);
+          }
+        }
+      }
+
       std::string
       prepare_message(const std::string header, const std::string content)
       {
@@ -271,11 +298,16 @@ namespace Transports
       }
 
       void
-      send_ack(const unsigned dest, const unsigned msg)
+      send_ack(const unsigned dest, const unsigned msg, const bool resume = false)
       {
         std::string message = "ACK,";
 
-        message += std::to_string(m_id) + "," + std::to_string(msg) + ",*";
+        if (resume)
+          message += "RESUME," + std::to_string(m_id) + ",*";
+        else if (dest == 0 && msg == 0)
+          message += "VIEW," + std::to_string(m_id) + ",*";
+        else
+          message += std::to_string(m_id) + "," + std::to_string(msg) + ",*";
 
         message.push_back('\n');
 
@@ -283,15 +315,29 @@ namespace Transports
       }
 
       void
-      send_multicast(const std::string header, const std::string content)
+      send_multicast(const std::string header, const std::string content, const bool view_change = false)
       {
-        m_time_vector[m_id]++;
+        std::string message;
 
-        const std::string message = prepare_message(header, content);
+        if (view_change)
+        {
+          message = header + "," + content + ",*\n";
+        }
+        else
+        {
+          if (m_state != ACTIVE)
+            return;
+
+          m_time_vector[m_id]++;
+          message = prepare_message(header, content);
+        }
 
         for (unsigned iter = 0; iter < c_total_members; iter++)
         {
           if (iter == m_id)
+            continue;
+
+          if (!m_view[iter] && !view_change)
             continue;
 
           m_sock.write((const uint8_t*) message.c_str(), message.size(), m_members[iter].address, m_members[iter].port);
@@ -301,10 +347,16 @@ namespace Transports
 
         msg.message = message;
 
-        msg.ack = {false};
-        msg.ack[m_id] = true;
+        for (unsigned m = 0; m < c_total_members; m++)
+          msg.ack[m] = !m_view[m];
 
-        m_unstable_messages.insert({m_time_vector[m_id], msg});
+        msg.ack[m_id] = true;
+        msg.timer.setTop(5.0);
+
+        if (view_change)
+          m_unstable_messages.insert({m_time_vector[m_id] + 42, msg});
+        else
+          m_unstable_messages.insert({m_time_vector[m_id], msg});
       }
 
       bool
@@ -349,17 +401,94 @@ namespace Transports
       }
 
       void
-      interpret_ack(const unsigned src, const unsigned message)
+      new_view(std::string msg)
       {
-        m_unstable_messages[message].ack[src] = true;
+        std::vector<std::string> parts;
+        String::split(msg, ",", parts);
+
+        for (unsigned iter = 1; iter < c_total_members + 1; iter++)
+          m_view[iter-1] = atoi(parts[iter].c_str()) == 1;
+      }
+
+      void
+      interpret_ack(const unsigned src, unsigned message, const bool view = false)
+      {
+        if (view)
+          message += 42;
+
+        auto it = m_unstable_messages.find(message);
+        if (it == m_unstable_messages.end())
+          return;
         
-        for (bool itr: m_unstable_messages[message].ack)
+        it->second.ack[src] = true;
+        
+        for (bool itr: it->second.ack)
         {
           if (!itr)
             return;
         }
 
-        m_unstable_messages.erase(message);
+        std::string old_msg = it->second.message;
+
+        if (it != m_unstable_messages.end())
+          m_unstable_messages.erase(it);
+
+        if (Utils::String::startsWith(old_msg, "VIEW"))
+        {
+          new_view(old_msg);
+          send_multicast("RESUME", "", true);
+        }
+
+        if (Utils::String::startsWith(old_msg, "RESUME"))
+          m_state = ACTIVE;
+      }
+
+      void
+      flush_unstable_messages()
+      {
+        unsigned total = m_unstable_messages.size();
+
+        if (total < 1)
+          return;
+        
+        for (auto& it: m_unstable_messages)
+        {
+          for (unsigned j = 0; j < c_total_members; j++)
+          {
+            if (!it.second.ack[j])
+              m_sock.write((const uint8_t*) it.second.message.c_str(), it.second.message.size(), m_members[j].address, m_members[j].port);
+          }
+
+          it.second.timer.setTop(5.0);
+        }
+
+        while(1)
+        {
+          for (auto& it: m_unstable_messages)
+          {
+            if (it.second.timer.overflow())
+              flush_unstable_messages();
+          }
+        }
+      }
+
+      void
+      interpret_view_change(const std::vector<std::string> parts)
+      {      
+        for (unsigned int itr = 1; itr < c_total_members + 1; itr++)
+        {
+          bool old_view = m_view[itr-1];
+          m_view[itr-1] = atoi(parts[itr].c_str()) == 1;
+
+          if (m_id == itr)
+          {
+            if (old_view && !m_view[itr - 1])
+              m_state = IDLE;
+          }
+        }
+
+        // flush_unstable_messages();
+        send_ack(0, 0);
       }
 
       void
@@ -370,7 +499,28 @@ namespace Transports
 
         if (parts[0] == "ACK")
         {
-          interpret_ack(atoi(parts[1].c_str()), atoi(parts[2].c_str()));
+          if (parts.size() == 3)
+            interpret_ack(atoi(parts[1].c_str()), atoi(parts[2].c_str()));
+          else
+            interpret_ack(atoi(parts[2].c_str()), 0, true);
+
+          return;
+        }
+
+        if (parts[0] == "VIEW")
+        {
+          if (parts.size() != c_total_members + 2)
+            return;
+
+          m_state = IDLE;
+          interpret_view_change(parts);
+          return;
+        }
+
+        if (parts[0] == "RESUME")
+        {
+          m_state = ACTIVE;
+          send_ack(0, 0, true);
           return;
         }
 
@@ -400,23 +550,44 @@ namespace Transports
       void
       onMain(void)
       {
-        while(!String::endsWith(Format::getTimeSafe(), "0"));
+        // while(!String::endsWith(Format::getTimeSafe(), "0"));
 
-        m_state = ACTIVE;
+        bool aux_init = true;
         
-        // Time::Counter<float> test(20.0);
+        Time::Counter<float> init(5.0);
+        Time::Counter<float> test(10.0);
+        Time::Counter<float> fb(1.0);
 
         while (!stopping())
         {
-          // if (test.overflow())
-            // m_state = IDLE;
+          if (m_id == 0 && test.overflow())
+          {
+            m_state = IDLE;
+            test.setTop(0.0);
+            m_view = {true, true, false};
+            send_multicast("VIEW", "1,1,0", true);
+          }
+
+          if (fb.overflow())
+          {
+            // war("%u|%u|%u", m_view[0], m_view[1], m_view[2]);
+            fb.reset();
+          }
+
+          if (m_id == 0 && init.overflow() && aux_init)
+          {
+            aux_init = false;
+            m_view = {true, true, true};
+            send_multicast("VIEW", "1,1,1", true);
+          }
 
           waitForMessages(0.1);
 
           check_queue();
+          // check_unstable_messages();
 
           char bufer_entity[128];
-          sprintf(bufer_entity, "time vector: [%u, %u, %u] unstable messages: %lu delivery queue: %lu", m_time_vector[0], m_time_vector[1], m_time_vector[2], m_unstable_messages.size(), m_queue.size());
+          sprintf(bufer_entity, "time vector: [%u, %u, %u] view: [%d %d %d] unstable messages: %lu delivery queue: %lu", m_time_vector[0], m_time_vector[1], m_time_vector[2], m_view[0], m_view[1], m_view[2],m_unstable_messages.size(), m_queue.size());
           setEntityState(IMC::EntityState::ESTA_NORMAL, Utils::String::str(DTR(bufer_entity)));
         }
       }
